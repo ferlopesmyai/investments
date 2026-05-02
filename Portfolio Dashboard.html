@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#A07868">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Portfolio">
+<title>Portfolio · Fernando</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #A07868; --bg-soft: #B89384;
+  --card: #FFFFFF; --card-soft: #FAF6F2; --card-cream: #F4ECE3;
+  --text: #2A201A; --text-2: #6B5D52; --text-3: #A89A8E;
+  --border: rgba(42,32,26,0.08); --border-2: rgba(42,32,26,0.04);
+  --coral: #E07856; --coral-soft: #FBE4DA;
+  --teal: #4D9C8C; --teal-soft: #DCEFEB;
+  --gold: #C49960; --gold-soft: #F5E8D2;
+  --slate: #7E8FA0; --slate-soft: #E0E6EC;
+  --mauve: #A87BAB; --mauve-soft: #ECE0EE;
+  --up: #5FA070; --up-soft: #DCEFE0;
+  --down: #D6736E; --down-soft: #F8DEDC;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--text);font-family:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;min-height:100vh;overscroll-behavior:none}
+.app{max-width:480px;margin:0 auto;padding:max(env(safe-area-inset-top),20px) 16px max(env(safe-area-inset-bottom),28px)}
+@media(min-width:720px){.app{max-width:720px;padding:32px 24px 48px}}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;color:#fff}
+.greeting{font-size:13px;opacity:.75;letter-spacing:.01em}
+.greeting strong{display:block;font-size:18px;font-weight:700;opacity:1;margin-top:2px}
+.topbar-actions{display:flex;align-items:center;gap:8px}
+.icon-btn{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:100px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:none;cursor:pointer;color:#fff;padding:0;transition:all .18s}
+.icon-btn:active{transform:scale(.95);background:rgba(255,255,255,.25)}
+.icon-btn svg{width:16px;height:16px}
+.icon-btn.spinning svg{animation:spin .9s linear infinite}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.live-badge{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:6px 10px;border-radius:100px;font-size:11px;font-weight:600;color:#fff}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#7FE095;box-shadow:0 0 8px rgba(127,224,149,.7);animation:pulse 2.4s ease-in-out infinite}
+.live-dot.stale{background:#E0B870;box-shadow:0 0 8px rgba(224,184,112,.7)}
+.live-dot.error{background:#E07878;box-shadow:0 0 8px rgba(224,120,120,.7);animation:none}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.85)}}
+.loading-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px;color:rgba(255,255,255,.85)}
+.loading-state .spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .9s linear infinite;margin-bottom:16px}
+.loading-state .label{font-size:13px;font-weight:600;opacity:.85}
+.error-card{background:var(--card);border-radius:20px;padding:22px;margin-bottom:14px;border-left:3px solid var(--down);box-shadow:0 1px 3px rgba(42,32,26,.08),0 8px 24px rgba(42,32,26,.04)}
+.error-title{font-size:14px;font-weight:800;color:var(--down);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.error-msg{font-size:13px;color:var(--text-2);line-height:1.5;margin-bottom:14px}
+.error-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.btn{font-family:inherit;font-weight:700;font-size:12px;padding:8px 14px;border-radius:100px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.btn-primary{background:var(--coral);color:#fff}
+.btn-secondary{background:var(--card-soft);color:var(--text)}
+.error-debug{background:var(--card-soft);border-radius:10px;padding:12px;font-family:"Inter",monospace;font-size:10px;color:var(--text-2);max-height:240px;overflow:auto;white-space:pre-wrap;word-break:break-word}
+.card{background:var(--card);border-radius:20px;padding:20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(42,32,26,.08),0 8px 24px rgba(42,32,26,.04)}
+.card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.card-title{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3)}
+.card-action{font-size:11px;font-weight:600;color:var(--text-2)}
+.hero{padding:24px 22px}
+.hero-label{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);margin-bottom:8px}
+.hero-value{font-family:"Inter",sans-serif;font-size:clamp(40px,11vw,56px);font-weight:700;letter-spacing:-.035em;line-height:1;color:var(--text);font-feature-settings:"tnum"}
+.hero-value .cents{font-size:.5em;color:var(--text-3);font-weight:600}
+.hero-row{display:flex;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:100px;font-size:12px;font-weight:700;font-family:"Inter",sans-serif}
+.pill-up{background:var(--up-soft);color:var(--up)}
+.pill-down{background:var(--down-soft);color:var(--down)}
+.pill-arrow{font-size:10px}
+.compare{font-size:12px;color:var(--text-2);font-weight:500}
+.compare strong{color:var(--text);font-weight:700}
+.hero-divider{height:1px;background:var(--border);margin:18px 0 16px}
+.hero-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.meta-item{display:flex;flex-direction:column;gap:2px}
+.meta-label{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3)}
+.meta-value{font-size:14px;font-weight:700;color:var(--text);font-family:"Inter",sans-serif}
+.meta-value .sub{font-size:11px;color:var(--text-2);font-weight:500;margin-left:4px}
+.donut-wrap{display:flex;align-items:center;gap:18px}
+.donut-canvas{width:110px;height:110px;flex-shrink:0;position:relative}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.donut-center-pct{font-family:"Inter",sans-serif;font-size:18px;font-weight:800;color:var(--text);letter-spacing:-.02em}
+.donut-center-label{font-size:9px;font-weight:600;color:var(--text-3);letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+.legend{flex:1;display:flex;flex-direction:column;gap:2px}
+.legend-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border-2)}
+.legend-row:last-child{border-bottom:none}
+.legend-name{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--text)}
+.swatch{width:8px;height:8px;border-radius:2px}
+.legend-pct{font-family:"Inter",sans-serif;font-size:12px;font-weight:700;color:var(--text-2);font-variant-numeric:tabular-nums}
+.tf-row{display:flex;gap:4px;background:var(--card-soft);padding:3px;border-radius:10px}
+.tf-btn{flex:1;padding:6px 0;background:none;border:none;font-family:inherit;font-size:11px;font-weight:700;color:var(--text-2);border-radius:7px;cursor:pointer;transition:all .18s;letter-spacing:.04em}
+.tf-btn.active{background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(42,32,26,.08)}
+.chart-legend{display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.cl-item{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--text-2)}
+.cl-line{width:14px;height:2px;border-radius:1px}
+.cl-value{font-family:"Inter",sans-serif;font-weight:700;color:var(--text)}
+.chart-canvas{height:200px;position:relative}
+.bench-summary{margin-top:14px;padding:12px 14px;background:var(--card-soft);border-radius:12px;display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.bench-summary .lbl{color:var(--text-2);font-weight:600}
+.bench-summary .val{font-family:"Inter",sans-serif;font-weight:700}
+.group{background:var(--card);border-radius:20px;padding:20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(42,32,26,.08),0 8px 24px rgba(42,32,26,.04);position:relative;overflow:hidden}
+.group::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--group-color)}
+.group-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+.group-tag{display:inline-flex;align-items:center;gap:6px;background:var(--group-soft);color:var(--group-color);padding:5px 10px;border-radius:100px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+.group-title{font-size:17px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+.group-subtitle{font-size:12px;color:var(--text-2);font-weight:500;margin-top:2px}
+.group-value{font-family:"Inter",sans-serif;font-size:26px;font-weight:700;letter-spacing:-.03em;color:var(--text);font-feature-settings:"tnum";text-align:right}
+.group-value .cents{font-size:.55em;color:var(--text-3)}
+.group-pct-row{text-align:right;margin-top:4px}
+.group-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:14px;background:var(--card-soft);border-radius:14px;margin-bottom:12px}
+.stat{display:flex;flex-direction:column;gap:3px}
+.stat-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3)}
+.stat-val{font-family:"Inter",sans-serif;font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+.stat-val.up{color:var(--up)}
+.stat-val.down{color:var(--down)}
+.stat-sub{font-size:11px;color:var(--text-2);font-weight:500}
+.holdings{display:flex;flex-direction:column;gap:8px}
+.hcard{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--card-soft);border-radius:12px}
+.hcard-left{display:flex;flex-direction:column;gap:2px;min-width:0}
+.hcard-ticker{font-family:"Inter",sans-serif;font-size:13px;font-weight:800;letter-spacing:.01em;color:var(--text)}
+.hcard-name{font-size:11px;color:var(--text-2);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+.hcard-right{text-align:right;display:flex;flex-direction:column;gap:2px;flex-shrink:0}
+.hcard-val{font-family:"Inter",sans-serif;font-size:14px;font-weight:700;color:var(--text)}
+.hcard-pct{font-family:"Inter",sans-serif;font-size:11px;font-weight:700}
+.div-yield-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.div-yield-card{padding:14px;background:var(--card-soft);border-radius:14px}
+.div-yield-card.featured{background:var(--coral-soft)}
+.dy-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:6px}
+.featured .dy-label{color:var(--coral)}
+.dy-value{font-family:"Inter",sans-serif;font-size:22px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
+.dy-value.coral{color:var(--coral)}
+.dy-sub{font-size:11px;color:var(--text-2);font-weight:500;margin-top:2px}
+.div-bar-chart{height:140px;margin:8px 0 16px}
+.div-list{display:flex;flex-direction:column;gap:6px}
+.div-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--card-soft);border-radius:10px;font-size:12px}
+.div-row-l{display:flex;align-items:center;gap:10px}
+.div-tk{font-family:"Inter",sans-serif;font-weight:800;font-size:12px;background:var(--card);padding:4px 8px;border-radius:6px;color:var(--text)}
+.div-date{color:var(--text-2);font-weight:500}
+.div-amt{font-family:"Inter",sans-serif;font-weight:700;color:var(--text)}
+.notes{background:rgba(255,255,255,.95);border-radius:16px;padding:16px 18px;margin-top:16px;margin-bottom:16px;border-left:3px solid var(--coral)}
+.notes-title{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--coral);margin-bottom:10px}
+.notes ul{list-style:none}
+.notes li{font-size:12px;color:var(--text-2);line-height:1.55;padding:6px 0;padding-left:14px;position:relative;font-weight:500}
+.notes li::before{content:"·";position:absolute;left:0;font-weight:800;color:var(--coral)}
+footer{text-align:center;font-size:11px;color:rgba(255,255,255,.6);font-weight:500;margin-top:24px;letter-spacing:.05em}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="greeting"><span>Good day,</span><strong>Fernando</strong></div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="refreshBtn" aria-label="Refresh">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/>
+          <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/>
+        </svg>
+      </button>
+      <div class="live-badge"><span class="live-dot" id="liveDot"></span><span id="live-time">—</span></div>
+    </div>
+  </div>
+
+  <div id="loadingState" class="loading-state">
+    <div class="spinner"></div>
+    <div class="label">Loading portfolio data…</div>
+  </div>
+
+  <div id="errorState" class="hidden"></div>
+
+  <div id="content" class="hidden">
+
+    <div class="card hero">
+      <div class="hero-label">Total Portfolio Value</div>
+      <div class="hero-value" id="totalValue"></div>
+      <div class="hero-row"><span class="pill" id="pillAll"></span><span class="compare" id="compareAll"></span></div>
+      <div class="hero-divider"></div>
+      <div class="hero-meta">
+        <div class="meta-item"><span class="meta-label">Year-End 2025</span><span class="meta-value" id="ytdEnd2025"></span></div>
+        <div class="meta-item"><span class="meta-label">YTD Change</span><span class="meta-value" id="ytdChange"></span></div>
+        <div class="meta-item"><span class="meta-label">Last Month</span><span class="meta-value" id="moChange"></span></div>
+        <div class="meta-item"><span class="meta-label">Cost Basis</span><span class="meta-value" id="costBasis"></span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-title">Allocation</span><span class="card-action" id="allocAsOf"></span></div>
+      <div class="donut-wrap">
+        <div class="donut-canvas">
+          <canvas id="donut" width="110" height="110"></canvas>
+          <div class="donut-center"><span class="donut-center-pct">100%</span><span class="donut-center-label">Invested</span></div>
+        </div>
+        <div class="legend" id="legend"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-title">Performance vs S&amp;P 500</span></div>
+      <div class="chart-legend">
+        <div class="cl-item"><span class="cl-line" style="background:var(--coral)"></span><span>Portfolio</span><span class="cl-value" id="cl-port">+0%</span></div>
+        <div class="cl-item"><span class="cl-line" style="background:var(--slate);opacity:.7"></span><span>S&amp;P 500</span><span class="cl-value" id="cl-spx">+0%</span></div>
+      </div>
+      <div class="chart-canvas"><canvas id="perfChart"></canvas></div>
+      <div class="tf-row" style="margin-top:14px" id="timeframe">
+        <button class="tf-btn" data-tf="6M">6M</button>
+        <button class="tf-btn" data-tf="1Y">1Y</button>
+        <button class="tf-btn active" data-tf="2Y">2Y</button>
+        <button class="tf-btn" data-tf="ALL">ALL</button>
+      </div>
+      <div class="bench-summary" id="benchSummary"></div>
+    </div>
+
+    <div id="groups"></div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-title">Dividend Income</span></div>
+      <div class="div-yield-row">
+        <div class="div-yield-card featured"><div class="dy-label">Trailing Yield</div><div class="dy-value coral" id="dyYield"></div><div class="dy-sub" id="dyYieldSub"></div></div>
+        <div class="div-yield-card"><div class="dy-label">Avg Monthly</div><div class="dy-value" id="dyMonthly"></div><div class="dy-sub" id="dyMonthlySub"></div></div>
+        <div class="div-yield-card"><div class="dy-label">2025 Total</div><div class="dy-value" id="dy2025"></div><div class="dy-sub">Full year</div></div>
+        <div class="div-yield-card"><div class="dy-label">2026 YTD</div><div class="dy-value" id="dy2026"></div><div class="dy-sub" id="dy2026Sub"></div></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:8px">Monthly Income</div>
+      <div class="div-bar-chart"><canvas id="divChart"></canvas></div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin:6px 0 10px">Recent Payments</div>
+      <div class="div-list" id="divList"></div>
+    </div>
+
+    <div class="notes">
+      <div class="notes-title">Data Quality Notes</div>
+      <ul id="notes"></ul>
+    </div>
+
+    <footer>Source · INVESTIMENTS API · As of <span id="asof"></span></footer>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const API_URL = "https://script.google.com/macros/s/AKfycbzzEwjW-0GYmolO-6PCMR79HoTpMrOxGshMM7MFpA25HgP-7mHxpH9po__jsGqNhgRvLQ/exec";
+const CACHE_KEY = "portfolio_raw_v2";
+const CACHE_TS_KEY = "portfolio_raw_ts_v2";
+
+// ============================================================
+// HARDCODED S&P 500 monthly closes (2026 values approximate)
+// Replace by adding an "SPX" column to your HISTORIC PRICES tab.
+// ============================================================
+const SPX_MONTHLY = [
+  ["2023-09-30",4288.05],["2023-10-31",4193.80],["2023-11-30",4567.80],["2023-12-31",4769.83],
+  ["2024-01-31",4845.65],["2024-02-29",5096.27],["2024-03-31",5254.35],["2024-04-30",5035.69],
+  ["2024-05-31",5277.51],["2024-06-30",5460.48],["2024-07-31",5522.30],["2024-08-31",5648.40],
+  ["2024-09-30",5762.48],["2024-10-31",5705.45],["2024-11-30",6032.38],["2024-12-31",5881.63],
+  ["2025-01-31",6040.53],["2025-02-28",5954.50],["2025-03-31",5611.85],["2025-04-30",5569.06],
+  ["2025-05-31",5911.69],["2025-06-30",6204.95],["2025-07-31",6339.39],["2025-08-31",6460.26],
+  ["2025-09-30",6688.46],["2025-10-31",6840.20],["2025-11-30",6812.61],["2025-12-31",6900.00],
+  ["2026-01-31",6755.00],["2026-02-28",6850.00],["2026-03-31",6740.00],["2026-04-30",6920.00]
+];
+
+// ============================================================
+// PARSING UTILITIES
+// ============================================================
+const $ = id => document.getElementById(id);
+
+function toNum(v) {
+  if (v === null || v === undefined || v === "") return 0;
+  if (typeof v === "number") return isNaN(v) ? 0 : v;
+  const s = String(v).replace(/[$,R\s]/g, "").trim();
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+function toDate(v, fmt = "auto") {
+  if (!v && v !== 0) return null;
+  if (v instanceof Date) return v;
+  const s = String(v);
+  // ISO 8601
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return new Date(s);
+  // dd/mm/yyyy or mm/dd/yyyy
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if (m) {
+    let a = +m[1], b = +m[2], y = +m[3];
+    if (y < 100) y += 2000;
+    if (fmt === "dmy") return new Date(y, b - 1, a);
+    if (fmt === "mdy") return new Date(y, a - 1, b);
+    // Auto
+    if (a > 12) return new Date(y, b - 1, a);
+    if (b > 12) return new Date(y, a - 1, b);
+    return new Date(y, b - 1, a); // default Brazilian
+  }
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function findSheet(raw, name) {
+  if (raw[name]) return raw[name];
+  const k = Object.keys(raw).find(k => k.toLowerCase() === name.toLowerCase());
+  return k ? raw[k] : [];
+}
+
+function isoMonth(d) {
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+}
+
+// ============================================================
+// COMPUTE: raw sheets → dashboard schema
+// ============================================================
+function compute(raw) {
+  if (!raw || typeof raw !== "object") {
+    throw new Error("API response is not an object. Got: " + typeof raw);
+  }
+  const sheets = Object.keys(raw);
+  if (!sheets.length) throw new Error("API response has no sheets.");
+
+  // ---- Real-time prices ----
+  const rt = findSheet(raw, "REAL TIME PRICE");
+  const prices = {};
+  rt.forEach(r => {
+    const t = r.TICKER || r.Ticker || r.ticker;
+    if (t) prices[t] = toNum(r.PRICE || r.Price || r.price);
+  });
+  // BTC/ETH swap fix: BTC must be > ETH
+  if (prices.BTC && prices.ETH && prices.BTC < prices.ETH) {
+    const tmp = prices.BTC; prices.BTC = prices.ETH; prices.ETH = tmp;
+  }
+  const usdBrl = prices.BRL || 0.20;
+
+  // ---- Simple BUY/SELL aggregator ----
+  function aggSimple(rows) {
+    let qty = 0, cost = 0;
+    rows.forEach(r => {
+      // Skip malformed rows where QTD doesn't parse
+      const rawQ = r.QTD;
+      if (typeof rawQ === "string" && !/^[\d.,]+$/.test(rawQ.replace(/\s/g, ""))) return;
+      const q = toNum(rawQ);
+      if (!q || q <= 0) return;
+      const p = toNum(r.Price);
+      const total = toNum(r.Total) || q * p;
+      const t = String(r.Type || "").toUpperCase().trim();
+      if (t === "BUY") { qty += q; cost += total; }
+      else if (t === "SELL") {
+        const avg = qty > 0 ? cost / qty : p;
+        cost -= q * avg;
+        qty -= q;
+      }
+    });
+    return { qty, cost };
+  }
+
+  const qqqA = aggSimple(findSheet(raw, "QQQ"));
+  const schdA = aggSimple(findSheet(raw, "SCHD"));
+  const taxmA = aggSimple(findSheet(raw, "TAXM"));
+  const bilA = aggSimple(findSheet(raw, "BIL"));
+  const lftbA = aggSimple(findSheet(raw, "LFTB11")); // BRL
+
+  // ---- BTC / ETH (sum QTD * TOTAL USD) ----
+  function aggCrypto(rows) {
+    let qty = 0, cost = 0;
+    rows.forEach(r => {
+      const q = toNum(r.QTD || r.Qtd || r.qtd);
+      // "TOTAL USD" or similar variants
+      const tk = Object.keys(r).find(k => /total\s*usd/i.test(k));
+      const total = tk ? toNum(r[tk]) : 0;
+      if (q > 0) { qty += q; cost += total; }
+    });
+    return { qty, cost };
+  }
+  const btcA = aggCrypto(findSheet(raw, "BTC"));
+  const ethA = aggCrypto(findSheet(raw, "ETH"));
+
+  // ---- 401k Fernando (VFIFX) ----
+  const vfRows = findSheet(raw, "401K Fernando");
+  let vfQty = 0, vfCost = 0, vfContrib = 0;
+  vfRows.forEach(r => {
+    const q = toNum(r.Quantity);
+    const p = toNum(r.Price);
+    const a = toNum(r.Amount);
+    const t = String(r.Type || "").trim();
+    if (t === "Fee") { vfQty -= q; }
+    else if (/Plan Contribution/i.test(t)) { vfQty += q; vfCost += q * p; vfContrib += a; }
+    else if (/Dividend|Earning|Misc/i.test(t)) { vfQty += q; vfCost += q * p; }
+  });
+
+  // ---- 401k Bruna (TRRNX trust class) ----
+  const brRows = findSheet(raw, "401k Bruna");
+  let trQty = 0, trCost = 0, trContrib = 0;
+  let trLatestPrice = 0, trLatestDate = null;
+  brRows.forEach(r => {
+    const q = toNum(r.Shares);
+    const p = toNum(r.Price);
+    const a = toNum(r.Amount);
+    const t = String(r["Activity Type"] || "").trim();
+    const d = toDate(r.Date, "mdy");
+    if (t === "Fee") trQty -= q;
+    else if (t === "Market Fluctuation") { /* ignore qty */ }
+    else if (/Contribution/i.test(t)) { trQty += q; trCost += q * p; trContrib += a; }
+    else if (/Misc|Dividend|Earning/i.test(t)) { trQty += q; trCost += q * p; }
+    if (p > 0 && (!trLatestDate || (d && d > trLatestDate))) {
+      trLatestPrice = p; trLatestDate = d;
+    }
+  });
+  // Override TRRNX price with trust class (latest from transactions)
+  const trrnxPrice = trLatestPrice || prices.TRRNX || 0;
+
+  // ---- LFTB11 estimated price (Selic accrual since purchase) ----
+  // Bought ~104 BRL Mar-Apr 2025; Selic ~14%/yr; ~13 months → ~120 BRL
+  // If your sheet adds LFTB11 to Real Time Price, use that.
+  const lftbPriceBrl = prices.LFTB11 || 120.50;
+
+  // ---- Build positions ----
+  const positions = {
+    QQQ: {
+      name: "Invesco QQQ Trust",
+      qty: qqqA.qty,
+      price: prices.QQQ || 0,
+      value: qqqA.qty * (prices.QQQ || 0),
+      cost: qqqA.cost,
+      avg_cost: qqqA.qty > 0 ? qqqA.cost / qqqA.qty : 0,
+    },
+    SCHD: {
+      name: "Schwab US Dividend",
+      qty: schdA.qty,
+      price: prices.SCHD || 0,
+      value: schdA.qty * (prices.SCHD || 0),
+      cost: schdA.cost,
+      avg_cost: schdA.qty > 0 ? schdA.cost / schdA.qty : 0,
+    },
+    TAXM: {
+      name: "BondBloxx Tax-Aware MA",
+      qty: taxmA.qty,
+      price: prices.TAXM || 0,
+      value: taxmA.qty * (prices.TAXM || 0),
+      cost: taxmA.cost,
+      avg_cost: taxmA.qty > 0 ? taxmA.cost / taxmA.qty : 0,
+    },
+    LFTB11: {
+      name: "Tesouro Selic ETF",
+      qty: lftbA.qty,
+      price_brl: lftbPriceBrl,
+      value_brl: lftbA.qty * lftbPriceBrl,
+      value: lftbA.qty * lftbPriceBrl * usdBrl,
+      fx: usdBrl,
+      cost_brl: lftbA.cost,
+      cost: lftbA.cost * 0.175, // approx avg USD/BRL during Mar-Apr 2025
+      avg_cost: lftbA.qty > 0 ? lftbA.cost / lftbA.qty : 0,
+    },
+    BTC: {
+      name: "Bitcoin",
+      qty: btcA.qty,
+      price: prices.BTC || 0,
+      value: btcA.qty * (prices.BTC || 0),
+      cost: btcA.cost,
+      avg_cost: btcA.qty > 0 ? btcA.cost / btcA.qty : 0,
+    },
+    ETH: {
+      name: "Ethereum",
+      qty: ethA.qty,
+      price: prices.ETH || 0,
+      value: ethA.qty * (prices.ETH || 0),
+      cost: ethA.cost,
+      avg_cost: ethA.qty > 0 ? ethA.cost / ethA.qty : 0,
+    },
+    VFIFX: {
+      name: "Vanguard Target 2050 (Fernando)",
+      qty: vfQty,
+      price: prices.VFIFX || 0,
+      value: vfQty * (prices.VFIFX || 0),
+      cost: vfCost,
+      contribution: vfContrib,
+      avg_cost: vfQty > 0 ? vfCost / vfQty : 0,
+    },
+    TRRNX: {
+      name: "T. Rowe Price 2055 (Wife)",
+      qty: trQty,
+      price: trrnxPrice,
+      value: trQty * trrnxPrice,
+      cost: trCost,
+      contribution: trContrib,
+      avg_cost: trQty > 0 ? trCost / trQty : 0,
+    }
+  };
+
+  // Compute pl + pl_pct for each
+  Object.values(positions).forEach(p => {
+    p.pl = p.value - p.cost;
+    p.pl_pct = p.cost > 0 ? (p.pl / p.cost) * 100 : 0;
+  });
+
+  // Round all to sensible decimals
+  Object.values(positions).forEach(p => {
+    p.qty = +p.qty.toFixed(6);
+    p.value = +p.value.toFixed(2);
+    p.cost = +p.cost.toFixed(2);
+    p.pl = +p.pl.toFixed(2);
+    p.pl_pct = +p.pl_pct.toFixed(2);
+    p.avg_cost = +p.avg_cost.toFixed(2);
+  });
+
+  // ---- Aggregates ----
+  const total_value = Object.values(positions).reduce((s, p) => s + p.value, 0);
+  const total_cost = Object.values(positions).reduce((s, p) => s + p.cost, 0);
+
+  const allocation = {
+    QQQ: positions.QQQ.value,
+    SCHD: positions.SCHD.value,
+    Crypto: positions.BTC.value + positions.ETH.value,
+    Cash: positions.TAXM.value + positions.LFTB11.value + positions.BIL?.value || (positions.TAXM.value + positions.LFTB11.value),
+    "401(k)": positions.VFIFX.value + positions.TRRNX.value,
+  };
+
+  // ---- DIVIDENDS ----
+  const divRows = findSheet(raw, "DIVIDENDS").filter(r => {
+    const a = String(r.Action || "").trim();
+    return /Dividend/i.test(a);
+  }).map(r => ({
+    date: toDate(r.Date, "mdy"),
+    ticker: r.Symbol || r.symbol || "",
+    amount: toNum(r.Amount)
+  })).filter(r => r.date && r.amount).sort((a, b) => b.date - a.date);
+
+  // Monthly aggregation for last 16 months
+  const monthlyMap = {};
+  divRows.forEach(r => {
+    const m = isoMonth(r.date);
+    monthlyMap[m] = (monthlyMap[m] || 0) + r.amount;
+  });
+  // Build last 16 months ending current month
+  const today = new Date();
+  const dividends_monthly = [];
+  for (let i = 15; i >= 0; i--) {
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    const m = isoMonth(d);
+    dividends_monthly.push({ month: m, amount: monthlyMap[m] || 0 });
+  }
+  const div_2025_total = divRows.filter(r => r.date.getFullYear() === 2025).reduce((s, r) => s + r.amount, 0);
+  const div_2026_ytd = divRows.filter(r => r.date.getFullYear() === 2026).reduce((s, r) => s + r.amount, 0);
+  const div_recent = divRows.slice(0, 8).map(r => ({
+    date: r.date.toISOString().slice(0, 10),
+    ticker: r.ticker,
+    amount: +r.amount.toFixed(2)
+  }));
+
+  // ---- HISTORICAL PORTFOLIO VALUE ----
+  // Walk HISTORIC PRICES tab; for each month with data, compute shares-held + value.
+  const histRows = findSheet(raw, "HISTORIC PRICES").map(r => {
+    // Tolerant column lookup
+    return {
+      date: toDate(r.DATE || r.Date || r.date, "mdy"),
+      brl: toNum(r.BRL),
+      taxm: toNum(r.TAXM),
+      bil: toNum(r.BIL),
+      qqq: toNum(r.QQQ),
+      schd: toNum(r.SCHD),
+      btc: toNum(r.BTC),
+      eth: toNum(r.ETH),
+      vfifx: toNum(r.VFIFX),
+      trrnx: toNum(r.TRRNX)
+    };
+  }).filter(r => r.date && (r.qqq > 0 || r.schd > 0));
+
+  // Pre-compute shares as-of for each ticker
+  const qqqTx = findSheet(raw, "QQQ").map(r => ({ d: toDate(r.Date, "dmy"), q: toNum(r.QTD), t: String(r.Type || "").toUpperCase() })).filter(r => r.d && r.q);
+  const schdTx = findSheet(raw, "SCHD").map(r => ({ d: toDate(r.Date, "dmy"), q: toNum(r.QTD), t: String(r.Type || "").toUpperCase() })).filter(r => r.d && r.q);
+  const taxmTx = findSheet(raw, "TAXM").map(r => ({ d: toDate(r.Date, "dmy"), q: toNum(r.QTD), t: String(r.Type || "").toUpperCase() })).filter(r => r.d && r.q);
+  const bilTx = findSheet(raw, "BIL").map(r => ({ d: toDate(r.Date, "dmy"), q: toNum(r.QTD), t: String(r.Type || "").toUpperCase() })).filter(r => r.d && r.q);
+  const lftbTx = findSheet(raw, "LFTB11").map(r => ({ d: toDate(r.Date, "dmy"), q: toNum(r.QTD), t: String(r.Type || "").toUpperCase() })).filter(r => r.d && r.q);
+  const btcTx = findSheet(raw, "BTC").map(r => ({ d: toDate(r["Date USA"] || r.Date, "mdy"), q: toNum(r.QTD) })).filter(r => r.d && r.q);
+  const ethTx = findSheet(raw, "ETH").map(r => ({ d: toDate(r["Date USA"] || r.Date, "mdy"), q: toNum(r.QTD) })).filter(r => r.d && r.q);
+  const vfTx = vfRows.map(r => ({
+    d: toDate(r.Date, "mdy"),
+    q: toNum(r.Quantity),
+    t: String(r.Type || "").trim()
+  })).filter(r => r.d && r.q);
+  const trTx = brRows.map(r => ({
+    d: toDate(r.Date, "mdy"),
+    q: toNum(r.Shares),
+    t: String(r["Activity Type"] || "").trim()
+  })).filter(r => r.d && r.q);
+
+  function sharesAt(tx, target, kind) {
+    let q = 0;
+    for (const r of tx) {
+      if (r.d > target) continue;
+      if (kind === "buysell") {
+        if (r.t === "BUY") q += r.q;
+        else if (r.t === "SELL") q -= r.q;
+      } else if (kind === "crypto") {
+        q += r.q;
+      } else if (kind === "vfifx") {
+        if (r.t === "Fee") q -= r.q;
+        else q += r.q;
+      } else if (kind === "trrnx") {
+        if (r.t === "Fee") q -= r.q;
+        else if (r.t === "Market Fluctuation") {} 
+        else q += r.q;
+      }
+    }
+    return q;
+  }
+
+  const history = histRows.map(h => {
+    const t = h.date;
+    const qq = sharesAt(qqqTx, t, "buysell") * h.qqq;
+    const sc = sharesAt(schdTx, t, "buysell") * h.schd;
+    const tx = sharesAt(taxmTx, t, "buysell") * h.taxm;
+    const bi = sharesAt(bilTx, t, "buysell") * h.bil;
+    const lf = sharesAt(lftbTx, t, "buysell") * 105 * h.brl; // approx LFTB11 price
+    const bc = sharesAt(btcTx, t, "crypto") * h.btc;
+    const et = sharesAt(ethTx, t, "crypto") * h.eth;
+    const vf = sharesAt(vfTx, t, "vfifx") * h.vfifx;
+    // TRRNX historic in HISTORIC PRICES is public mutual fund (~$24);
+    // user holds trust class (~$53). Scale up by ratio.
+    const trrnxScale = trrnxPrice && h.trrnx ? trrnxPrice / h.trrnx : 2.182;
+    const tr = sharesAt(trTx, t, "trrnx") * h.trrnx * trrnxScale;
+    return {
+      date: t.toISOString().slice(0, 10),
+      value: +(qq + sc + tx + bi + lf + bc + et + vf + tr).toFixed(2)
+    };
+  }).filter(h => h.value > 0).sort((a, b) => a.date.localeCompare(b.date));
+
+  // End of 2025 lookup
+  const end_2025 = history.find(h => h.date === "2025-12-31") || history[history.length - 1];
+  const end_2025_value = end_2025 ? end_2025.value : null;
+
+  // ---- S&P 500 series (filter to dates that match our history range) ----
+  const histDates = new Set(history.map(h => h.date));
+  const spx = SPX_MONTHLY.filter(([d]) => histDates.has(d)).map(([date, value]) => ({ date, value }));
+
+  // ---- Final schema ----
+  return {
+    as_of: new Date().toISOString().slice(0, 10),
+    total_value: +total_value.toFixed(2),
+    total_cost: +total_cost.toFixed(2),
+    unrealized_pl: +(total_value - total_cost).toFixed(2),
+    unrealized_pct: total_cost > 0 ? +(((total_value - total_cost) / total_cost) * 100).toFixed(2) : 0,
+    end_2025_value,
+    positions,
+    allocation,
+    history,
+    spx,
+    dividends_monthly,
+    div_recent,
+    div_2025_total: +div_2025_total.toFixed(2),
+    div_2026_ytd: +div_2026_ytd.toFixed(2),
+    fx: { usd_brl_rate: usdBrl },
+    data_quality_notes: [
+      "Dashboard fetches raw sheet data from your Apps Script and computes everything client-side.",
+      prices.BTC && prices.ETH && prices.BTC > 1000 && prices.ETH < 1000 ? null : "BTC/ETH prices auto-corrected if swapped in Real Time Price tab.",
+      "TRRNX uses trust class price ($" + trrnxPrice.toFixed(2) + ") from latest 401k Bruna transaction, not the public mutual fund price.",
+      "LFTB11 price " + (prices.LFTB11 ? "from your sheet" : "estimated from Selic accrual (R$" + lftbPriceBrl + "). Add LFTB11 to Real Time Price tab for exact value."),
+      "S&P 500 monthly closes for 2026 are approximate. Add an SPX column to HISTORIC PRICES for live values."
+    ].filter(Boolean)
+  };
+}
+
+// ============================================================
+// FETCH + CACHE
+// ============================================================
+async function fetchData() {
+  const res = await fetch(API_URL, { method: "GET", redirect: "follow", cache: "no-store" });
+  if (!res.ok) throw new Error("HTTP " + res.status + " " + res.statusText);
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); }
+  catch (e) { throw new Error("Response was not valid JSON. First 300 chars: " + text.slice(0, 300)); }
+  return data;
+}
+function loadCache() { try { return JSON.parse(localStorage.getItem(CACHE_KEY) || "null"); } catch { return null; } }
+function saveCache(d) { try { localStorage.setItem(CACHE_KEY, JSON.stringify(d)); localStorage.setItem(CACHE_TS_KEY, Date.now().toString()); } catch {} }
+function cacheAge() { const t = +localStorage.getItem(CACHE_TS_KEY) || 0; return t ? Date.now() - t : null; }
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function showState(state) {
+  $("loadingState").classList.toggle("hidden", state !== "loading");
+  $("content").classList.toggle("hidden", state !== "ready");
+  $("errorState").classList.toggle("hidden", state !== "error");
+}
+function setLiveStatus(kind, label) {
+  const dot = $("liveDot");
+  dot.className = "live-dot" + (kind === "stale" ? " stale" : kind === "error" ? " error" : "");
+  $("live-time").textContent = label;
+}
+function showError(msg, raw) {
+  $("errorState").innerHTML = `
+    <div class="error-card">
+      <div class="error-title">⚠ Couldn't load portfolio</div>
+      <div class="error-msg">${msg}</div>
+      <div class="error-actions">
+        <button class="btn btn-primary" onclick="initLoad()">Retry</button>
+        <a class="btn btn-secondary" href="${API_URL}" target="_blank">Open API URL</a>
+      </div>
+      ${raw ? `<div class="error-debug">${escapeHtml(raw).slice(0, 1500)}</div>` : ""}
+    </div>`;
+  showState("error");
+}
+function escapeHtml(s) { return String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"})[c]); }
+
+// ============================================================
+// FORMATTING
+// ============================================================
+const fmt = (n, d = 2) => Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+const fmtK = n => { const a = Math.abs(n); if (a >= 1e6) return "$" + (n / 1e6).toFixed(2) + "M"; if (a >= 1e3) return "$" + (n / 1e3).toFixed(0) + "K"; return "$" + n.toFixed(0); };
+const split = n => { const [i, d] = fmt(n).split("."); return { int: (n < 0 ? "-" : "") + i, dec: d }; };
+const sgn = n => n >= 0 ? "+" : "−";
+const cls = n => n >= 0 ? "up" : "down";
+const arrow = n => n >= 0 ? "↑" : "↓";
+
+const GROUPS = {
+  QQQ: { color: "#E07856", soft: "#FBE4DA", title: "Growth", subtitle: "QQQ — NASDAQ 100" },
+  SCHD: { color: "#4D9C8C", soft: "#DCEFEB", title: "Dividends", subtitle: "SCHD — Schwab US Dividend" },
+  Crypto: { color: "#C49960", soft: "#F5E8D2", title: "Crypto", subtitle: "BTC + ETH" },
+  Cash: { color: "#7E8FA0", soft: "#E0E6EC", title: "Cash & Equivalents", subtitle: "TAXM + LFTB11 (USD)" },
+  "401(k)": { color: "#A87BAB", soft: "#ECE0EE", title: "401(k) Combined", subtitle: "Fernando + Wife" }
+};
+
+// ============================================================
+// RENDER
+// ============================================================
+let perfChart = null, divChart = null;
+function render(D) {
+  const tv = split(D.total_value);
+  $("totalValue").innerHTML = `$${tv.int}<span class="cents">.${tv.dec}</span>`;
+  $("asof").textContent = D.as_of;
+  $("allocAsOf").textContent = D.as_of;
+
+  const end2025 = D.end_2025_value || 0;
+  const ytdChg = D.total_value - end2025;
+  const ytdPct = end2025 ? (ytdChg / end2025) * 100 : 0;
+  const histLast = D.history[D.history.length - 1].value;
+  const histPrev = D.history.length > 1 ? D.history[D.history.length - 2].value : histLast;
+  const moChg = histLast - histPrev;
+  const moPct = histPrev ? (moChg / histPrev) * 100 : 0;
+
+  const pillAll = $("pillAll");
+  pillAll.innerHTML = `<span class="pill-arrow">${arrow(D.unrealized_pct)}</span> ${sgn(D.unrealized_pct)}${fmt(D.unrealized_pct)}%`;
+  pillAll.className = "pill " + (D.unrealized_pct >= 0 ? "pill-up" : "pill-down");
+  $("compareAll").innerHTML = `<strong>${sgn(D.unrealized_pl)}$${fmt(Math.abs(D.unrealized_pl), 0)}</strong> all-time gain`;
+  $("ytdEnd2025").innerHTML = `$${fmt(end2025, 0)}`;
+  $("ytdChange").innerHTML = `<span style="color:${ytdChg >= 0 ? 'var(--up)' : 'var(--down)'}">${sgn(ytdPct)}${fmt(ytdPct)}%</span><span class="sub">${sgn(ytdChg)}$${fmt(Math.abs(ytdChg), 0)}</span>`;
+  $("moChange").innerHTML = `<span style="color:${moChg >= 0 ? 'var(--up)' : 'var(--down)'}">${sgn(moPct)}${fmt(moPct)}%</span><span class="sub">${sgn(moChg)}$${fmt(Math.abs(moChg), 0)}</span>`;
+  $("costBasis").innerHTML = `$${fmt(D.total_cost, 0)}`;
+
+  // Allocation donut
+  const allocSorted = Object.entries(D.allocation).map(([k, v]) => ({ label: k, value: v, color: (GROUPS[k] || { color: "#888" }).color })).sort((a, b) => b.value - a.value);
+  const allocTotal = allocSorted.reduce((a, b) => a + b.value, 0);
+  const dCanvas = $("donut");
+  const dpr = window.devicePixelRatio || 1;
+  dCanvas.width = 110 * dpr; dCanvas.height = 110 * dpr;
+  const dctx = dCanvas.getContext("2d");
+  dctx.scale(dpr, dpr);
+  let start = -Math.PI / 2;
+  allocSorted.forEach(seg => {
+    const ang = (seg.value / allocTotal) * Math.PI * 2;
+    dctx.beginPath();
+    dctx.arc(55, 55, 50, start, start + ang);
+    dctx.arc(55, 55, 36, start + ang, start, true);
+    dctx.closePath(); dctx.fillStyle = seg.color; dctx.fill();
+    start += ang;
+  });
+  const legendEl = $("legend"); legendEl.innerHTML = "";
+  allocSorted.forEach(seg => {
+    const pct = ((seg.value / allocTotal) * 100).toFixed(1);
+    const row = document.createElement("div");
+    row.className = "legend-row";
+    row.innerHTML = `<span class="legend-name"><span class="swatch" style="background:${seg.color}"></span>${seg.label}</span><span class="legend-pct">${pct}%</span>`;
+    legendEl.appendChild(row);
+  });
+
+  // Performance vs S&P 500 (rebased to 100)
+  const ctx = $("perfChart").getContext("2d");
+  function rebase(s) { const v0 = s[0].value; return s.map(p => ({ x: p.date, y: (p.value / v0) * 100 })); }
+  function alignSpx(portStartDate) {
+    // Find SPX index whose date matches portStartDate
+    const idx = D.spx.findIndex(p => p.date === portStartDate);
+    return idx >= 0 ? D.spx.slice(idx) : D.spx;
+  }
+  function drawChart(tf) {
+    let n;
+    switch (tf) { case "6M": n = 6; break; case "1Y": n = 12; break; case "2Y": n = 24; break; default: n = D.history.length; }
+    const port = D.history.slice(-n);
+    const portR = rebase(port);
+    const spxAligned = alignSpx(port[0].date);
+    const spxR = spxAligned.length ? rebase(spxAligned) : portR.map(p => ({ x: p.x, y: 100 }));
+    const portChange = portR[portR.length - 1].y - 100;
+    const spxChange = spxR.length ? spxR[spxR.length - 1].y - 100 : 0;
+    $("cl-port").textContent = (portChange >= 0 ? "+" : "") + portChange.toFixed(1) + "%";
+    $("cl-port").style.color = portChange >= 0 ? "var(--up)" : "var(--down)";
+    $("cl-spx").textContent = (spxChange >= 0 ? "+" : "") + spxChange.toFixed(1) + "%";
+    $("cl-spx").style.color = spxChange >= 0 ? "var(--up)" : "var(--down)";
+    const diff = portChange - spxChange;
+    $("benchSummary").innerHTML = `<span class="lbl">vs Benchmark</span><span class="val" style="color:${diff >= 0 ? 'var(--up)' : 'var(--down)'}">${diff >= 0 ? "↑" : "↓"} ${diff >= 0 ? "+" : ""}${diff.toFixed(1)}% ${diff >= 0 ? "outperforming" : "underperforming"}</span>`;
+    const grad = ctx.createLinearGradient(0, 0, 0, 200);
+    grad.addColorStop(0, "rgba(224,120,86,0.18)");
+    grad.addColorStop(1, "rgba(224,120,86,0)");
+    if (perfChart) perfChart.destroy();
+    perfChart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: port.map(p => p.date),
+        datasets: [
+          { label: "Portfolio", data: portR.map(p => p.y), borderColor: "#E07856", borderWidth: 2, backgroundColor: grad, fill: true, tension: 0.35, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: "#E07856", pointHoverBorderColor: "#fff", pointHoverBorderWidth: 2 },
+          { label: "S&P 500", data: spxR.map(p => p.y), borderColor: "#7E8FA0", borderWidth: 1.5, borderDash: [4, 4], fill: false, tension: 0.35, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: "#7E8FA0", pointHoverBorderColor: "#fff", pointHoverBorderWidth: 2 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        animation: { duration: 500, easing: "easeOutCubic" },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: "#FFFFFF", titleColor: "#A89A8E", bodyColor: "#2A201A",
+            borderColor: "rgba(42,32,26,.08)", borderWidth: 1, padding: 10,
+            titleFont: { family: "Inter", size: 11, weight: 600 },
+            bodyFont: { family: "Inter", size: 12, weight: 700 },
+            displayColors: true, boxWidth: 8, boxHeight: 8, boxPadding: 4,
+            callbacks: { title: i => i[0].label, label: c => " " + c.dataset.label + ": " + (c.parsed.y >= 100 ? "+" : "") + (c.parsed.y - 100).toFixed(1) + "%" }
+          }
+        },
+        scales: {
+          x: { grid: { display: false }, border: { display: false }, ticks: { color: "#A89A8E", font: { family: "Inter", size: 10, weight: 500 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 5,
+            callback: function (v) { const l = this.getLabelForValue(v); const [y, m] = l.split("-"); return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][parseInt(m)-1] + " " + y.slice(2); } } },
+          y: { grid: { color: "rgba(42,32,26,.05)", drawTicks: false }, border: { display: false }, ticks: { color: "#A89A8E", font: { family: "Inter", size: 10, weight: 500 }, padding: 6, callback: v => (v >= 100 ? "+" : "") + (v - 100).toFixed(0) + "%" } }
+        },
+        interaction: { intersect: false, mode: "index" }
+      }
+    });
+  }
+  drawChart("2Y");
+  $("timeframe").onclick = e => {
+    const btn = e.target.closest(".tf-btn"); if (!btn) return;
+    document.querySelectorAll(".tf-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    drawChart(btn.dataset.tf);
+  };
+
+  // Group cards
+  function pctOf(v) { return ((v / D.total_value) * 100).toFixed(1) + "%"; }
+  function holdingItem(tk, p, opts = {}) {
+    const valStr = "$" + fmt(p.value, 0);
+    const pctStr = (p.pl_pct !== undefined) ? `<span class="hcard-pct" style="color:${p.pl_pct >= 0 ? 'var(--up)' : 'var(--down)'}">${sgn(p.pl_pct)}${fmt(p.pl_pct)}%</span>` : "";
+    const subline = opts.subline || `${fmt(p.qty, p.qty < 1 ? 4 : 0)} sh · avg $${fmt(p.avg_cost || p.price)}`;
+    return `<div class="hcard"><div class="hcard-left"><span class="hcard-ticker">${tk}</span><span class="hcard-name">${subline}</span></div><div class="hcard-right"><span class="hcard-val">${valStr}</span>${pctStr}</div></div>`;
+  }
+  function statBlock(label, value, sub, klass) {
+    return `<div class="stat"><span class="stat-label">${label}</span><span class="stat-val ${klass||''}">${value}</span>${sub ? `<span class="stat-sub">${sub}</span>` : ''}</div>`;
+  }
+  function groupCard(key, blocks, holdings) {
+    const g = GROUPS[key];
+    return `<div class="group" style="--group-color:${g.color};--group-soft:${g.soft}">
+      <div class="group-head">
+        <div><div class="group-tag">${g.title}</div><div class="group-subtitle">${g.subtitle}</div></div>
+        <div><div class="group-value">${blocks.value}</div><div class="group-pct-row"><span class="pill ${blocks.pl >= 0 ? 'pill-up' : 'pill-down'}">${sgn(blocks.plPct)}${fmt(blocks.plPct)}%</span></div></div>
+      </div>
+      <div class="group-stats">
+        ${statBlock("Cost Basis", "$" + fmt(blocks.cost, 0))}
+        ${statBlock("Unrealized", `${sgn(blocks.pl)}$${fmt(Math.abs(blocks.pl), 0)}`, null, cls(blocks.pl))}
+        ${statBlock("% of Portfolio", pctOf(blocks.totalValue))}
+        ${blocks.extraStat || statBlock("Positions", blocks.posCount || "1")}
+      </div>
+      <div class="holdings">${holdings}</div>
+    </div>`;
+  }
+
+  const groupsEl = $("groups"); groupsEl.innerHTML = "";
+  const P = D.positions;
+  // QQQ
+  if (P.QQQ && P.QQQ.qty > 0) { const p = P.QQQ; const s = split(p.value);
+    groupsEl.innerHTML += groupCard("QQQ", { value: `$${s.int}<span class="cents">.${s.dec}</span>`, pl: p.pl, plPct: p.pl_pct, cost: p.cost, totalValue: p.value, posCount: 1, extraStat: statBlock("Shares", fmt(p.qty, 0), "@ $" + fmt(p.avg_cost)) }, holdingItem("QQQ", p)); }
+  // SCHD
+  if (P.SCHD && P.SCHD.qty > 0) { const p = P.SCHD; const s = split(p.value);
+    groupsEl.innerHTML += groupCard("SCHD", { value: `$${s.int}<span class="cents">.${s.dec}</span>`, pl: p.pl, plPct: p.pl_pct, cost: p.cost, totalValue: p.value, posCount: 1, extraStat: statBlock("Shares", fmt(p.qty, 0), "@ $" + fmt(p.avg_cost)) }, holdingItem("SCHD", p)); }
+  // Crypto
+  if (P.BTC && P.ETH && (P.BTC.qty > 0 || P.ETH.qty > 0)) {
+    const b = P.BTC, e = P.ETH; const total = b.value + e.value, cost = b.cost + e.cost, pl = total - cost, plPct = cost ? (pl / cost) * 100 : 0; const s = split(total);
+    groupsEl.innerHTML += groupCard("Crypto", { value: `$${s.int}<span class="cents">.${s.dec}</span>`, pl, plPct, cost, totalValue: total, posCount: 2, extraStat: statBlock("Split", `${((b.value / total) * 100).toFixed(0)}/${((e.value / total) * 100).toFixed(0)}`, "BTC / ETH") }, holdingItem("BTC", b, { subline: `${fmt(b.qty, 4)} BTC · @ $${fmt(b.avg_cost, 0)}` }) + holdingItem("ETH", e, { subline: `${fmt(e.qty, 3)} ETH · @ $${fmt(e.avg_cost, 0)}` }));
+  }
+  // Cash
+  if (P.TAXM && P.LFTB11) {
+    const t = P.TAXM, l = P.LFTB11; const total = t.value + l.value, cost = t.cost + l.cost, pl = total - cost, plPct = cost ? (pl / cost) * 100 : 0; const s = split(total);
+    groupsEl.innerHTML += groupCard("Cash", { value: `$${s.int}<span class="cents">.${s.dec}</span>`, pl, plPct, cost, totalValue: total, posCount: 2, extraStat: statBlock("USD/BRL", fmt(1 / D.fx.usd_brl_rate, 4), "FX rate") }, holdingItem("TAXM", t, { subline: `${fmt(t.qty, 0)} sh · @ $${fmt(t.avg_cost)}` }) + holdingItem("LFTB11", l, { subline: `${fmt(l.qty, 0)} sh · BRL→USD @ ${fmt(l.fx, 4)}` }));
+  }
+  // 401(k)
+  if (P.VFIFX && P.TRRNX) {
+    const v = P.VFIFX, w = P.TRRNX; const total = v.value + w.value, cost = v.cost + w.cost, contrib = (v.contribution || 0) + (w.contribution || 0), pl = total - cost, plPct = cost ? (pl / cost) * 100 : 0; const s = split(total);
+    groupsEl.innerHTML += groupCard("401(k)", { value: `$${s.int}<span class="cents">.${s.dec}</span>`, pl, plPct, cost, totalValue: total, posCount: 2, extraStat: statBlock("Contributions", "$" + fmt(contrib, 0), "Total deposited") }, holdingItem("VFIFX", v, { subline: `Fernando · ${fmt(v.qty, 0)} sh` }) + holdingItem("TRRNX", w, { subline: `Wife · ${fmt(w.qty, 0)} sh` }));
+  }
+
+  // Dividends
+  const ttm = D.dividends_monthly.slice(-12).reduce((a, b) => a + b.amount, 0);
+  const yieldPct = D.total_value ? (ttm / D.total_value) * 100 : 0;
+  const monthlyAvg = ttm / 12;
+  const ytdMonths = D.dividends_monthly.filter(d => d.month && d.month.startsWith("2026")).length;
+  $("dyYield").textContent = fmt(yieldPct) + "%";
+  $("dyYieldSub").textContent = "$" + fmt(ttm, 0) + " trailing 12mo";
+  $("dyMonthly").textContent = "$" + fmt(monthlyAvg, 0);
+  $("dyMonthlySub").textContent = "TTM avg";
+  $("dy2025").textContent = "$" + fmt(D.div_2025_total || 0, 0);
+  $("dy2026").textContent = "$" + fmt(D.div_2026_ytd || 0, 0);
+  $("dy2026Sub").textContent = ytdMonths + " months";
+
+  const divCtx = $("divChart").getContext("2d");
+  const last12 = D.dividends_monthly.slice(-12);
+  if (divChart) divChart.destroy();
+  divChart = new Chart(divCtx, {
+    type: "bar",
+    data: { labels: last12.map(d => d.month), datasets: [{ data: last12.map(d => d.amount), backgroundColor: "#E07856", borderRadius: 6, borderSkipped: false, barPercentage: 0.7, categoryPercentage: 0.85 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 600, easing: "easeOutCubic" },
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor: "#FFFFFF", titleColor: "#A89A8E", bodyColor: "#2A201A", borderColor: "rgba(42,32,26,.08)", borderWidth: 1, padding: 10, titleFont: { family: "Inter", size: 11, weight: 600 }, bodyFont: { family: "Inter", size: 12, weight: 700 }, displayColors: false, callbacks: { title: i => i[0].label, label: c => " $" + c.parsed.y.toFixed(2) } }
+      },
+      scales: {
+        x: { grid: { display: false }, border: { display: false }, ticks: { color: "#A89A8E", font: { family: "Inter", size: 9, weight: 500 }, maxRotation: 0, callback: function (v) { const l = this.getLabelForValue(v); const [y, m] = l.split("-"); return ["J","F","M","A","M","J","J","A","S","O","N","D"][parseInt(m)-1]; } } },
+        y: { grid: { color: "rgba(42,32,26,.05)", drawTicks: false }, border: { display: false }, ticks: { color: "#A89A8E", font: { family: "Inter", size: 9, weight: 500 }, padding: 6, maxTicksLimit: 4, callback: v => v >= 1000 ? "$" + (v / 1000).toFixed(1) + "K" : "$" + v } }
+      }
+    }
+  });
+
+  const divList = $("divList"); divList.innerHTML = "";
+  (D.div_recent || []).slice(0, 6).forEach(d => {
+    const el = document.createElement("div");
+    el.className = "div-row";
+    el.innerHTML = `<div class="div-row-l"><span class="div-tk">${d.ticker}</span><span class="div-date">${d.date}</span></div><span class="div-amt">$${fmt(d.amount)}</span>`;
+    divList.appendChild(el);
+  });
+
+  $("notes").innerHTML = (D.data_quality_notes || []).map(n => `<li>${n}</li>`).join("");
+}
+
+// ============================================================
+// LOAD
+// ============================================================
+async function initLoad() {
+  setLiveStatus("normal", "Loading…");
+
+  const cached = loadCache();
+  if (cached) {
+    try {
+      const D = compute(cached);
+      render(D);
+      showState("ready");
+      const age = cacheAge();
+      const min = age != null ? Math.round(age / 60000) : null;
+      setLiveStatus(min != null && min > 60 ? "stale" : "normal", min == null ? "Cached" : (min < 1 ? "Just now" : min + "m ago"));
+    } catch (e) { console.warn("Cached compute failed:", e); }
+  } else {
+    showState("loading");
+  }
+
+  try {
+    const raw = await fetchData();
+    saveCache(raw);
+    const D = compute(raw);
+    render(D);
+    showState("ready");
+    setLiveStatus("normal", "Just now");
+  } catch (err) {
+    console.error("Load failed:", err);
+    if (cached) {
+      setLiveStatus("error", "Offline");
+    } else {
+      showError("Couldn't load or compute portfolio data. " + err.message, err.stack || err.message);
+    }
+  }
+}
+
+$("refreshBtn").addEventListener("click", async () => {
+  const btn = $("refreshBtn"); btn.classList.add("spinning");
+  setLiveStatus("normal", "Refreshing…");
+  try {
+    const raw = await fetchData();
+    saveCache(raw);
+    const D = compute(raw);
+    render(D);
+    showState("ready");
+    setLiveStatus("normal", "Just now");
+  } catch (err) {
+    setLiveStatus("error", "Failed");
+    if (!loadCache()) showError("Refresh failed. " + err.message, err.stack);
+  } finally {
+    setTimeout(() => btn.classList.remove("spinning"), 400);
+  }
+});
+
+initLoad();
+</script>
+</body>
+</html>
