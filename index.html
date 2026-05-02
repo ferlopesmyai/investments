@@ -79,9 +79,19 @@ body{background:var(--bg);color:var(--text);font-family:"Plus Jakarta Sans",-app
 .meta-value .sub{font-size:11px;color:var(--text-2);font-weight:500;margin-left:4px}
 .donut-wrap{display:flex;align-items:center;gap:18px}
 .donut-canvas{width:110px;height:110px;flex-shrink:0;position:relative}
-.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
-.donut-center-pct{font-family:"Inter",sans-serif;font-size:18px;font-weight:800;color:var(--text);letter-spacing:-.02em}
-.donut-center-label{font-size:9px;font-weight:600;color:var(--text-3);letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+.donut-canvas canvas{display:block;width:110px!important;height:110px!important}
+.quick-grid-head{display:grid;grid-template-columns:1.1fr 86px 70px 70px;gap:8px;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:0 4px 8px;border-bottom:1px solid var(--border-2)}
+.quick-grid-head .qh-r{text-align:right}
+.quick-row{display:grid;grid-template-columns:1.1fr 86px 70px 70px;gap:8px;align-items:center;padding:11px 4px;border-bottom:1px solid var(--border-2)}
+.quick-row:last-child{border-bottom:none}
+.quick-name{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--text);min-width:0}
+.quick-name .swatch-q{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.quick-name span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.quick-val{font-family:"Inter",sans-serif;font-size:13px;font-weight:700;color:var(--text);text-align:right;font-variant-numeric:tabular-nums}
+.quick-pct{font-family:"Inter",sans-serif;font-size:12px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums;line-height:1.15}
+.quick-pct .qp-sub{display:block;font-size:9px;font-weight:600;color:var(--text-3);margin-top:2px;letter-spacing:.02em}
+.quick-pct.up{color:var(--up)}
+.quick-pct.down{color:var(--down)}
 .legend{flex:1;display:flex;flex-direction:column;gap:2px}
 .legend-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border-2)}
 .legend-row:last-child{border-bottom:none}
@@ -185,12 +195,22 @@ footer{text-align:center;font-size:11px;color:rgba(255,255,255,.6);font-weight:5
       </div>
     </div>
 
+    <div class="card quick">
+      <div class="card-head"><span class="card-title">Quick Overview</span><span class="card-action">vs end-2025</span></div>
+      <div class="quick-grid-head">
+        <div>Asset</div>
+        <div class="qh-r">Value</div>
+        <div class="qh-r">All-time</div>
+        <div class="qh-r">YTD</div>
+      </div>
+      <div id="quickList"></div>
+    </div>
+
     <div class="card">
       <div class="card-head"><span class="card-title">Allocation</span><span class="card-action" id="allocAsOf"></span></div>
       <div class="donut-wrap">
         <div class="donut-canvas">
           <canvas id="donut" width="110" height="110"></canvas>
-          <div class="donut-center"><span class="donut-center-pct">100%</span><span class="donut-center-label">Invested</span></div>
         </div>
         <div class="legend" id="legend"></div>
       </div>
@@ -246,21 +266,6 @@ const CACHE_KEY = "portfolio_raw_v2";
 const CACHE_TS_KEY = "portfolio_raw_ts_v2";
 
 // ============================================================
-// HARDCODED S&P 500 monthly closes (2026 values approximate)
-// Replace by adding an "SPX" column to your HISTORIC PRICES tab.
-// ============================================================
-const SPX_MONTHLY = [
-  ["2023-09-30",4288.05],["2023-10-31",4193.80],["2023-11-30",4567.80],["2023-12-31",4769.83],
-  ["2024-01-31",4845.65],["2024-02-29",5096.27],["2024-03-31",5254.35],["2024-04-30",5035.69],
-  ["2024-05-31",5277.51],["2024-06-30",5460.48],["2024-07-31",5522.30],["2024-08-31",5648.40],
-  ["2024-09-30",5762.48],["2024-10-31",5705.45],["2024-11-30",6032.38],["2024-12-31",5881.63],
-  ["2025-01-31",6040.53],["2025-02-28",5954.50],["2025-03-31",5611.85],["2025-04-30",5569.06],
-  ["2025-05-31",5911.69],["2025-06-30",6204.95],["2025-07-31",6339.39],["2025-08-31",6460.26],
-  ["2025-09-30",6688.46],["2025-10-31",6840.20],["2025-11-30",6812.61],["2025-12-31",6900.00],
-  ["2026-01-31",6755.00],["2026-02-28",6850.00],["2026-03-31",6740.00],["2026-04-30",6920.00]
-];
-
-// ============================================================
 // PARSING UTILITIES
 // ============================================================
 const $ = id => document.getElementById(id);
@@ -297,8 +302,17 @@ function toDate(v, fmt = "auto") {
 
 function findSheet(raw, name) {
   if (raw[name]) return raw[name];
-  const k = Object.keys(raw).find(k => k.toLowerCase() === name.toLowerCase());
+  const target = name.trim().toLowerCase();
+  const k = Object.keys(raw).find(k => k.trim().toLowerCase() === target);
   return k ? raw[k] : [];
+}
+
+// Tolerant column lookup: handles trailing/leading whitespace + case
+function getCol(row, name) {
+  if (row[name] !== undefined) return row[name];
+  const target = name.trim().toLowerCase();
+  const k = Object.keys(row).find(k => k.trim().toLowerCase() === target);
+  return k !== undefined ? row[k] : undefined;
 }
 
 function isoMonth(d) {
@@ -405,10 +419,8 @@ function compute(raw) {
   // Override TRRNX price with trust class (latest from transactions)
   const trrnxPrice = trLatestPrice || prices.TRRNX || 0;
 
-  // ---- LFTB11 estimated price (Selic accrual since purchase) ----
-  // Bought ~104 BRL Mar-Apr 2025; Selic ~14%/yr; ~13 months → ~120 BRL
-  // If your sheet adds LFTB11 to Real Time Price, use that.
-  const lftbPriceBrl = prices.LFTB11 || 120.50;
+  // ---- LFTB11 (USD-priced; sheet now tracks LFTB11 in USD end-to-end) ----
+  const lftbPrice = prices.LFTB11 || 0;
 
   // ---- Build positions ----
   const positions = {
@@ -437,14 +449,11 @@ function compute(raw) {
       avg_cost: taxmA.qty > 0 ? taxmA.cost / taxmA.qty : 0,
     },
     LFTB11: {
-      name: "Tesouro Selic ETF",
+      name: "Tesouro Selic ETF (USD)",
       qty: lftbA.qty,
-      price_brl: lftbPriceBrl,
-      value_brl: lftbA.qty * lftbPriceBrl,
-      value: lftbA.qty * lftbPriceBrl * usdBrl,
-      fx: usdBrl,
-      cost_brl: lftbA.cost,
-      cost: lftbA.cost * 0.175, // approx avg USD/BRL during Mar-Apr 2025
+      price: lftbPrice,
+      value: lftbA.qty * lftbPrice,
+      cost: lftbA.cost,
       avg_cost: lftbA.qty > 0 ? lftbA.cost / lftbA.qty : 0,
     },
     BTC: {
@@ -546,18 +555,20 @@ function compute(raw) {
   // ---- HISTORICAL PORTFOLIO VALUE ----
   // Walk HISTORIC PRICES tab; for each month with data, compute shares-held + value.
   const histRows = findSheet(raw, "HISTORIC PRICES").map(r => {
-    // Tolerant column lookup
+    // Tolerant column lookup (handles trailing whitespace in headers like "SP500TR  ")
     return {
-      date: toDate(r.DATE || r.Date || r.date, "mdy"),
-      brl: toNum(r.BRL),
-      taxm: toNum(r.TAXM),
-      bil: toNum(r.BIL),
-      qqq: toNum(r.QQQ),
-      schd: toNum(r.SCHD),
-      btc: toNum(r.BTC),
-      eth: toNum(r.ETH),
-      vfifx: toNum(r.VFIFX),
-      trrnx: toNum(r.TRRNX)
+      date: toDate(getCol(r, "DATE") || getCol(r, "Date"), "mdy"),
+      brl: toNum(getCol(r, "BRL")),
+      taxm: toNum(getCol(r, "TAXM")),
+      bil: toNum(getCol(r, "BIL")),
+      qqq: toNum(getCol(r, "QQQ")),
+      schd: toNum(getCol(r, "SCHD")),
+      btc: toNum(getCol(r, "BTC")),
+      eth: toNum(getCol(r, "ETH")),
+      vfifx: toNum(getCol(r, "VFIFX")),
+      trrnx: toNum(getCol(r, "TRRNX")),
+      lftb11: toNum(getCol(r, "LFTB11")),
+      sp500tr: toNum(getCol(r, "SP500TR"))
     };
   }).filter(r => r.date && (r.qqq > 0 || r.schd > 0));
 
@@ -601,13 +612,14 @@ function compute(raw) {
     return q;
   }
 
-  const history = histRows.map(h => {
+  // Per-month per-group values (used for total + Quick Overview YTD)
+  const historyDetailed = histRows.map(h => {
     const t = h.date;
     const qq = sharesAt(qqqTx, t, "buysell") * h.qqq;
     const sc = sharesAt(schdTx, t, "buysell") * h.schd;
     const tx = sharesAt(taxmTx, t, "buysell") * h.taxm;
     const bi = sharesAt(bilTx, t, "buysell") * h.bil;
-    const lf = sharesAt(lftbTx, t, "buysell") * 105 * h.brl; // approx LFTB11 price
+    const lf = sharesAt(lftbTx, t, "buysell") * h.lftb11; // USD price from sheet
     const bc = sharesAt(btcTx, t, "crypto") * h.btc;
     const et = sharesAt(ethTx, t, "crypto") * h.eth;
     const vf = sharesAt(vfTx, t, "vfifx") * h.vfifx;
@@ -615,19 +627,32 @@ function compute(raw) {
     // user holds trust class (~$53). Scale up by ratio.
     const trrnxScale = trrnxPrice && h.trrnx ? trrnxPrice / h.trrnx : 2.182;
     const tr = sharesAt(trTx, t, "trrnx") * h.trrnx * trrnxScale;
+    const groups = {
+      QQQ: qq,
+      SCHD: sc,
+      Crypto: bc + et,
+      Cash: tx + bi + lf,
+      "401(k)": vf + tr
+    };
     return {
       date: t.toISOString().slice(0, 10),
+      groups,
       value: +(qq + sc + tx + bi + lf + bc + et + vf + tr).toFixed(2)
     };
   }).filter(h => h.value > 0).sort((a, b) => a.date.localeCompare(b.date));
 
-  // End of 2025 lookup
-  const end_2025 = history.find(h => h.date === "2025-12-31") || history[history.length - 1];
-  const end_2025_value = end_2025 ? end_2025.value : null;
+  const history = historyDetailed.map(h => ({ date: h.date, value: h.value }));
 
-  // ---- S&P 500 series (filter to dates that match our history range) ----
-  const histDates = new Set(history.map(h => h.date));
-  const spx = SPX_MONTHLY.filter(([d]) => histDates.has(d)).map(([date, value]) => ({ date, value }));
+  // End of 2025 lookup (total + per-group)
+  const end_2025_detailed = historyDetailed.find(h => h.date === "2025-12-31");
+  const end_2025_value = end_2025_detailed ? end_2025_detailed.value : null;
+  const end_2025_by_group = end_2025_detailed ? end_2025_detailed.groups : null;
+
+  // ---- S&P 500 series (live from HISTORIC PRICES SP500TR column) ----
+  const spx = histRows.filter(h => h.sp500tr > 0).map(h => ({
+    date: h.date.toISOString().slice(0, 10),
+    value: h.sp500tr
+  })).sort((a, b) => a.date.localeCompare(b.date));
 
   // ---- Final schema ----
   return {
@@ -637,6 +662,7 @@ function compute(raw) {
     unrealized_pl: +(total_value - total_cost).toFixed(2),
     unrealized_pct: total_cost > 0 ? +(((total_value - total_cost) / total_cost) * 100).toFixed(2) : 0,
     end_2025_value,
+    end_2025_by_group,
     positions,
     allocation,
     history,
@@ -647,11 +673,11 @@ function compute(raw) {
     div_2026_ytd: +div_2026_ytd.toFixed(2),
     fx: { usd_brl_rate: usdBrl },
     data_quality_notes: [
-      "Dashboard fetches raw sheet data from your Apps Script and computes everything client-side.",
-      prices.BTC && prices.ETH && prices.BTC > 1000 && prices.ETH < 1000 ? null : "BTC/ETH prices auto-corrected if swapped in Real Time Price tab.",
-      "TRRNX uses trust class price ($" + trrnxPrice.toFixed(2) + ") from latest 401k Bruna transaction, not the public mutual fund price.",
-      "LFTB11 price " + (prices.LFTB11 ? "from your sheet" : "estimated from Selic accrual (R$" + lftbPriceBrl + "). Add LFTB11 to Real Time Price tab for exact value."),
-      "S&P 500 monthly closes for 2026 are approximate. Add an SPX column to HISTORIC PRICES for live values."
+      "Dashboard fetches raw sheet data from your Apps Script on every load, with localStorage cache for instant repaint.",
+      prices.BTC && prices.ETH && prices.BTC > 1000 && prices.ETH < 1000 ? null : "BTC/ETH prices auto-corrected — they appear swapped in your Real Time Price tab.",
+      "TRRNX uses trust-class price ($" + trrnxPrice.toFixed(2) + ") from your latest 401k Bruna transaction, not the public mutual fund price.",
+      "S&P 500 benchmark uses the SP500TR total-return series from your Historic Prices tab.",
+      "LFTB11 is now tracked in USD throughout (price + cost basis from your sheet)."
     ].filter(Boolean)
   };
 }
@@ -745,14 +771,51 @@ function render(D) {
   $("moChange").innerHTML = `<span style="color:${moChg >= 0 ? 'var(--up)' : 'var(--down)'}">${sgn(moPct)}${fmt(moPct)}%</span><span class="sub">${sgn(moChg)}$${fmt(Math.abs(moChg), 0)}</span>`;
   $("costBasis").innerHTML = `$${fmt(D.total_cost, 0)}`;
 
+  // Quick Overview card (above Allocation, below Total)
+  const qList = $("quickList");
+  qList.innerHTML = "";
+  const groupVals = {
+    QQQ:     { value: D.allocation.QQQ,     cost: D.positions.QQQ.cost },
+    SCHD:    { value: D.allocation.SCHD,    cost: D.positions.SCHD.cost },
+    Crypto:  { value: D.allocation.Crypto,  cost: D.positions.BTC.cost + D.positions.ETH.cost },
+    Cash:    { value: D.allocation.Cash,    cost: D.positions.TAXM.cost + D.positions.LFTB11.cost },
+    "401(k)":{ value: D.allocation["401(k)"], cost: D.positions.VFIFX.cost + D.positions.TRRNX.cost }
+  };
+  ["QQQ","SCHD","Crypto","Cash","401(k)"].forEach(k => {
+    const g = GROUPS[k]; const gv = groupVals[k];
+    const allTimePl = gv.value - gv.cost;
+    const allTimePct = gv.cost > 0 ? (allTimePl / gv.cost) * 100 : 0;
+    const end25 = (D.end_2025_by_group && D.end_2025_by_group[k]) || 0;
+    const ytdChg = end25 ? gv.value - end25 : 0;
+    const ytdPct = end25 ? (ytdChg / end25) * 100 : 0;
+    const allCls = allTimePl >= 0 ? "up" : "down";
+    const ytdCls = ytdChg >= 0 ? "up" : "down";
+    const allTimeStr = `${sgn(allTimePct)}${fmt(Math.abs(allTimePct), 1)}%<span class="qp-sub">${sgn(allTimePl)}${fmtK(Math.abs(allTimePl))}</span>`;
+    const ytdStr = end25 ? `${sgn(ytdPct)}${fmt(Math.abs(ytdPct), 1)}%<span class="qp-sub">${sgn(ytdChg)}${fmtK(Math.abs(ytdChg))}</span>` : `<span style="color:var(--text-3)">—</span>`;
+    const row = document.createElement("div");
+    row.className = "quick-row";
+    row.innerHTML = `
+      <div class="quick-name"><span class="swatch-q" style="background:${g.color}"></span><span>${g.title}</span></div>
+      <div class="quick-val">${fmtK(gv.value)}</div>
+      <div class="quick-pct ${allCls}">${allTimeStr}</div>
+      <div class="quick-pct ${ytdCls}">${ytdStr}</div>`;
+    qList.appendChild(row);
+  });
+
   // Allocation donut
   const allocSorted = Object.entries(D.allocation).map(([k, v]) => ({ label: k, value: v, color: (GROUPS[k] || { color: "#888" }).color })).sort((a, b) => b.value - a.value);
   const allocTotal = allocSorted.reduce((a, b) => a + b.value, 0);
   const dCanvas = $("donut");
   const dpr = window.devicePixelRatio || 1;
-  dCanvas.width = 110 * dpr; dCanvas.height = 110 * dpr;
+  // Set backing-store size for crisp render, then lock CSS size to 110x110
+  dCanvas.width = 110 * dpr;
+  dCanvas.height = 110 * dpr;
+  dCanvas.style.width = "110px";
+  dCanvas.style.height = "110px";
   const dctx = dCanvas.getContext("2d");
+  dctx.setTransform(1, 0, 0, 1, 0, 0); // reset (in case render() ran before)
   dctx.scale(dpr, dpr);
+  dctx.clearRect(0, 0, 110, 110);
   let start = -Math.PI / 2;
   allocSorted.forEach(seg => {
     const ang = (seg.value / allocTotal) * Math.PI * 2;
@@ -882,7 +945,7 @@ function render(D) {
   // Cash
   if (P.TAXM && P.LFTB11) {
     const t = P.TAXM, l = P.LFTB11; const total = t.value + l.value, cost = t.cost + l.cost, pl = total - cost, plPct = cost ? (pl / cost) * 100 : 0; const s = split(total);
-    groupsEl.innerHTML += groupCard("Cash", { value: `$${s.int}<span class="cents">.${s.dec}</span>`, pl, plPct, cost, totalValue: total, posCount: 2, extraStat: statBlock("USD/BRL", fmt(1 / D.fx.usd_brl_rate, 4), "FX rate") }, holdingItem("TAXM", t, { subline: `${fmt(t.qty, 0)} sh · @ $${fmt(t.avg_cost)}` }) + holdingItem("LFTB11", l, { subline: `${fmt(l.qty, 0)} sh · BRL→USD @ ${fmt(l.fx, 4)}` }));
+    groupsEl.innerHTML += groupCard("Cash", { value: `$${s.int}<span class="cents">.${s.dec}</span>`, pl, plPct, cost, totalValue: total, posCount: 2, extraStat: statBlock("Positions", "2", "TAXM + LFTB11") }, holdingItem("TAXM", t, { subline: `${fmt(t.qty, 0)} sh · @ $${fmt(t.avg_cost)}` }) + holdingItem("LFTB11", l, { subline: `${fmt(l.qty, 0)} sh · @ $${fmt(l.avg_cost)}` }));
   }
   // 401(k)
   if (P.VFIFX && P.TRRNX) {
