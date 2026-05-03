@@ -64,6 +64,7 @@ body{background:var(--bg);color:var(--text);font-family:"Plus Jakarta Sans",-app
 .hero-label{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);margin-bottom:8px}
 .hero-value{font-family:"Inter",sans-serif;font-size:clamp(40px,11vw,56px);font-weight:700;letter-spacing:-.035em;line-height:1;color:var(--text);font-feature-settings:"tnum"}
 .hero-value .cents{font-size:.5em;color:var(--text-3);font-weight:600}
+.hero-brl{font-family:"Inter",sans-serif;font-size:13px;font-weight:600;color:var(--text-3);margin-top:8px;font-variant-numeric:tabular-nums;letter-spacing:.01em}
 .hero-row{display:flex;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap}
 .pill{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:100px;font-size:12px;font-weight:700;font-family:"Inter",sans-serif}
 .pill-up{background:var(--up-soft);color:var(--up)}
@@ -189,6 +190,7 @@ footer{text-align:center;font-size:11px;color:rgba(255,255,255,.6);font-weight:5
     <div class="card hero">
       <div class="hero-label">Total Portfolio Value</div>
       <div class="hero-value" id="totalValue"></div>
+      <div class="hero-brl" id="totalValueBRL"></div>
       <div class="hero-pl-label">All-time gain</div>
       <div class="hero-pl-row">
         <span class="pill" id="pillAll"></span>
@@ -267,6 +269,15 @@ footer{text-align:center;font-size:11px;color:rgba(255,255,255,.6);font-weight:5
       <div class="div-bar-chart"><canvas id="divChart"></canvas></div>
       <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin:6px 0 10px">Recent Payments</div>
       <div class="div-list" id="divList"></div>
+    </div>
+
+    <div class="card" id="forecastCard">
+      <div class="card-head"><span class="card-title">Forecast 2026 – 2029</span><span class="card-action" id="forecastNote">Reinvested · DCA</span></div>
+      <div class="chart-legend">
+        <div class="cl-item"><span class="cl-line" style="background:var(--teal)"></span><span>End 2029</span><span class="cl-value" id="cl-fc-end">$0</span></div>
+        <div class="cl-item"><span style="font-weight:600">vs Today</span><span class="cl-value" id="cl-fc-delta">$0</span></div>
+      </div>
+      <div class="chart-canvas"><canvas id="forecastChart"></canvas></div>
     </div>
 
     <div class="notes">
@@ -755,6 +766,135 @@ function compute(raw) {
     "401(k)": +m["401(k)"].toFixed(2)
   }));
 
+  // ---- FUTURE assumptions (forecast 2026-2029) ----
+  // Sheet structure: param-name col + 4 year cols (2026, 2027, 2028, 2029).
+  // Header row may be blank, so we detect the year row by scanning values.
+  function normalizeFutureAsset(label) {
+    const s = label.replace(/^(New Money Invested|Dividend Yield|Growth)\s+/i, "").trim();
+    if (/^401K?\s*Fernando/i.test(s)) return "VFIFX";
+    if (/^401K?\s*Bruna/i.test(s)) return "TRRNX";
+    return s.toUpperCase();
+  }
+  function parseFuture(rows) {
+    if (!rows || !rows.length) return null;
+    const out = { newMoney: {}, divYield: {}, growth: {}, usdBrl: {} };
+    // Detect year columns. Two layouts supported:
+    //   (a) headers are blank/positional, year row holds 2026..2029 as values
+    //   (b) headers ARE "2026"/"2027"/"2028"/"2029" (Apps Script used them as keys)
+    let yearOrder = [2026, 2027, 2028, 2029];
+    let valueIdxs = [1, 2, 3, 4];
+    let paramIdx = 0;
+    let useKeys = false; // when true, use keys instead of positional indices
+    let yearKeys = [];
+    let paramKey = null;
+
+    // Try layout (b) first: any row with keys "2026"-"2029"
+    const sampleKeys = Object.keys(rows[0] || {});
+    const yearKeyHits = sampleKeys.filter(k => /^20(2[6-9]|30)$/.test(String(k)));
+    if (yearKeyHits.length >= 4) {
+      useKeys = true;
+      yearKeys = yearKeyHits.slice(0, 4).sort();
+      yearOrder = yearKeys.map(k => +k);
+      paramKey = sampleKeys.find(k => !yearKeyHits.includes(k)) || sampleKeys[0];
+    } else {
+      // Layout (a): scan for the year-row by values
+      for (const r of rows) {
+        const vals = Object.values(r);
+        const hits = [];
+        vals.forEach((v, i) => {
+          const n = +v;
+          if (Number.isInteger(n) && n >= 2026 && n <= 2030) hits.push({ i, n });
+        });
+        if (hits.length >= 4) {
+          yearOrder = hits.slice(0, 4).map(h => h.n);
+          valueIdxs = hits.slice(0, 4).map(h => h.i);
+          const used = new Set(valueIdxs);
+          const pi = vals.findIndex((v, i) => !used.has(i) && typeof v === "string" && v.length > 0);
+          if (pi >= 0) paramIdx = pi;
+          break;
+        }
+      }
+    }
+    function readNum(v) {
+      if (v == null || v === "") return 0;
+      if (typeof v === "number") return v;
+      if (typeof v === "string") {
+        if (v.includes("%")) return parseFloat(v.replace(/[%\s]/g, "")) / 100;
+        return parseFloat(v.replace(/[$,R\s]/g, "")) || 0;
+      }
+      return 0;
+    }
+    rows.forEach(r => {
+      const param = useKeys
+        ? String(r[paramKey] || "").trim()
+        : String(Object.values(r)[paramIdx] || "").trim();
+      if (!param) return;
+      const yearVals = {};
+      yearOrder.forEach((y, yi) => {
+        const v = useKeys ? r[yearKeys[yi]] : Object.values(r)[valueIdxs[yi]];
+        yearVals[y] = readNum(v);
+      });
+      if (/^New Money Invested\s+/i.test(param)) {
+        out.newMoney[normalizeFutureAsset(param)] = yearVals;
+      } else if (/^Dividend Yield\s+/i.test(param)) {
+        out.divYield[normalizeFutureAsset(param)] = yearVals;
+      } else if (/^Growth\s+/i.test(param)) {
+        out.growth[normalizeFutureAsset(param)] = yearVals;
+      } else if (/^USD\s*\/?\s*BRL/i.test(param)) {
+        out.usdBrl = yearVals;
+      }
+    });
+    return out;
+  }
+  const future = parseFuture(findSheet(raw, "FUTURE"));
+
+  // ---- Forecast 2026-2029 (year-end values, dividends reinvested) ----
+  // Baseline: today's actual portfolio value per asset.
+  // 2026: only the months remaining from today through Dec apply.
+  // 2027-2029: full 12 months of growth + new money + reinvested dividends.
+  // Cash flows are spread monthly (DCA). Growth + dividends compound monthly.
+  function computeForecast(positions, fut) {
+    if (!fut) return null;
+    const ASSETS = ["QQQ", "SCHD", "TAXM", "LFTB11", "BTC", "ETH", "VFIFX", "TRRNX"];
+    const today = new Date();
+    const monthsLeft2026 = (today.getFullYear() === 2026)
+      ? 12 - today.getMonth()                     // e.g. May (month 4) -> 8 months left
+      : (today.getFullYear() < 2026 ? 12 : 0);   // pre-2026 = full year, post-2026 = nothing
+    const current = {};
+    ASSETS.forEach(a => { current[a] = (positions[a] && positions[a].value) || 0; });
+    const yearEnds = [];
+    [2026, 2027, 2028, 2029].forEach(year => {
+      const months = (year === 2026) ? monthsLeft2026 : 12;
+      ASSETS.forEach(asset => {
+        const annualMoney  = (fut.newMoney[asset] && fut.newMoney[asset][year]) || 0;
+        const annualGrowth = (fut.growth[asset]   && fut.growth[asset][year])   || 0;
+        const annualDiv    = (fut.divYield[asset] && fut.divYield[asset][year]) || 0;
+        const monthlyMoney  = annualMoney / 12;
+        const monthlyFactor = Math.pow(1 + annualGrowth, 1 / 12)
+                            * Math.pow(1 + annualDiv,    1 / 12);
+        let v = current[asset];
+        for (let m = 0; m < months; m++) {
+          v += monthlyMoney;     // contribute at start of month
+          v *= monthlyFactor;    // then growth + reinvest dividends
+        }
+        current[asset] = v;
+      });
+      const total = ASSETS.reduce((s, a) => s + current[a], 0);
+      yearEnds.push({
+        year,
+        value: +total.toFixed(2),
+        byAsset: Object.fromEntries(ASSETS.map(a => [a, +current[a].toFixed(2)]))
+      });
+    });
+    return {
+      years: yearEnds.map(y => y.year),
+      values: yearEnds.map(y => y.value),
+      detailed: yearEnds,
+      months_left_2026: monthsLeft2026
+    };
+  }
+  const forecast = computeForecast(positions, future);
+
   // ---- Final schema ----
   return {
     as_of: new Date().toISOString().slice(0, 10),
@@ -778,6 +918,8 @@ function compute(raw) {
     div_2025_ytd_same: +div_2025_ytd_same.toFixed(2),
     div_2026_ytd: +div_2026_ytd.toFixed(2),
     fx: { usd_brl_rate: usdBrl },
+    forecast,
+    future,
     data_quality_notes: [
       "Dashboard fetches raw sheet data from your Apps Script on every load, with localStorage cache for instant repaint.",
       prices.BTC && prices.ETH && prices.BTC > 1000 && prices.ETH < 1000 ? null : "BTC/ETH prices auto-corrected — they appear swapped in your Real Time Price tab.",
@@ -854,10 +996,18 @@ const GROUPS = {
 // ============================================================
 // RENDER
 // ============================================================
-let perfChart = null, divChart = null, contribChart = null;
+let perfChart = null, divChart = null, contribChart = null, forecastChart = null;
 function render(D) {
   const tv = split(D.total_value);
   $("totalValue").innerHTML = `$${tv.int}<span class="cents">.${tv.dec}</span>`;
+  // BRL conversion (REAL TIME PRICE tab → BRL = USD per 1 BRL, e.g. 0.2016)
+  const brlRate = (D.fx && D.fx.usd_brl_rate) || 0;
+  if (brlRate > 0) {
+    const brlValue = D.total_value / brlRate;
+    $("totalValueBRL").textContent = "≈ R$ " + brlValue.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
+  } else {
+    $("totalValueBRL").textContent = "";
+  }
   $("asof").textContent = D.as_of;
   $("allocAsOf").textContent = D.as_of;
 
@@ -1207,6 +1357,73 @@ function render(D) {
     el.innerHTML = `<div class="div-row-l"><span class="div-tk">${d.ticker}</span><span class="div-date">${d.date}</span></div><span class="div-amt">$${fmt(d.amount)}</span>`;
     divList.appendChild(el);
   });
+
+  // Forecast 2026-2029 (year-end values, dividends reinvested via FUTURE assumptions)
+  const fc = D.forecast;
+  if (fc && fc.values && fc.values.length) {
+    $("forecastCard").style.display = "";
+    const labels = fc.years.map(y => String(y));
+    const values = fc.values;
+    const todayVal = D.total_value;
+    const endVal = values[values.length - 1];
+    const delta = endVal - todayVal;
+    const deltaPct = todayVal ? (delta / todayVal) * 100 : 0;
+    $("cl-fc-end").textContent = "$" + fmt(endVal, 0);
+    $("cl-fc-delta").innerHTML = `${sgn(delta)}$${fmt(Math.abs(delta), 0)} <span style="opacity:.6">(${sgn(deltaPct)}${fmt(Math.abs(deltaPct), 1)}%)</span>`;
+    $("cl-fc-delta").style.color = delta >= 0 ? "var(--up)" : "var(--down)";
+    if (typeof fc.months_left_2026 === "number" && fc.months_left_2026 < 12 && fc.months_left_2026 > 0) {
+      $("forecastNote").textContent = `Reinvested · DCA · ${fc.months_left_2026}mo left in 2026`;
+    } else {
+      $("forecastNote").textContent = "Reinvested · DCA";
+    }
+    const fcCtx = $("forecastChart").getContext("2d");
+    const grad = fcCtx.createLinearGradient(0, 0, 0, 200);
+    grad.addColorStop(0, "rgba(77,156,140,0.22)");
+    grad.addColorStop(1, "rgba(77,156,140,0)");
+    if (forecastChart) forecastChart.destroy();
+    forecastChart = new Chart(fcCtx, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [{
+          label: "Total Value",
+          data: values,
+          borderColor: "#4D9C8C",
+          borderWidth: 2.4,
+          backgroundColor: grad,
+          fill: true,
+          tension: 0.32,
+          pointRadius: 4,
+          pointBackgroundColor: "#4D9C8C",
+          pointBorderColor: "#fff",
+          pointBorderWidth: 2,
+          pointHoverRadius: 6
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        animation: { duration: 500, easing: "easeOutCubic" },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: "#FFFFFF", titleColor: "#A89A8E", bodyColor: "#2A201A",
+            borderColor: "rgba(42,32,26,.08)", borderWidth: 1, padding: 10,
+            titleFont: { family: "Inter", size: 11, weight: 600 },
+            bodyFont: { family: "Inter", size: 12, weight: 700 },
+            displayColors: false,
+            callbacks: { title: i => i[0].label, label: c => " $" + c.parsed.y.toLocaleString("en-US", { maximumFractionDigits: 0 }) }
+          }
+        },
+        scales: {
+          x: { grid: { display: false }, border: { display: false }, ticks: { color: "#A89A8E", font: { family: "Inter", size: 11, weight: 600 } } },
+          y: { grid: { color: "rgba(42,32,26,.05)", drawTicks: false }, border: { display: false }, ticks: { color: "#A89A8E", font: { family: "Inter", size: 10, weight: 500 }, padding: 6, maxTicksLimit: 5, callback: v => v >= 1e6 ? "$" + (v / 1e6).toFixed(1) + "M" : v >= 1000 ? "$" + (v / 1000).toFixed(0) + "K" : "$" + v } }
+        },
+        interaction: { intersect: false, mode: "index" }
+      }
+    });
+  } else {
+    $("forecastCard").style.display = "none";
+  }
 
   $("notes").innerHTML = (D.data_quality_notes || []).map(n => `<li>${n}</li>`).join("");
 }
