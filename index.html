@@ -84,6 +84,9 @@ body{background:var(--bg);color:var(--text);font-family:"Plus Jakarta Sans",-app
 .quick-grid-head .qh-r{text-align:right}
 .quick-row{display:grid;grid-template-columns:1.1fr 86px 70px 70px;gap:8px;align-items:center;padding:11px 4px;border-bottom:1px solid var(--border-2)}
 .quick-row:last-child{border-bottom:none}
+.quick-row.benchmark{border-top:1px solid var(--border);border-bottom:none;margin-top:4px;padding-top:13px}
+.quick-row.benchmark .quick-name{color:var(--text-2);font-weight:600;font-size:12px}
+.quick-row.benchmark .quick-name .swatch-q{background:repeating-linear-gradient(45deg,var(--text-3),var(--text-3) 3px,#fff 3px,#fff 5px)!important}
 .quick-name{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--text);min-width:0}
 .quick-name .swatch-q{width:10px;height:10px;border-radius:3px;flex-shrink:0}
 .quick-name span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -217,31 +220,46 @@ footer{text-align:center;font-size:11px;color:rgba(255,255,255,.6);font-weight:5
     </div>
 
     <div class="card">
-      <div class="card-head"><span class="card-title">Performance vs S&amp;P 500</span></div>
+      <div class="card-head"><span class="card-title">Portfolio Value</span></div>
       <div class="chart-legend">
-        <div class="cl-item"><span class="cl-line" style="background:var(--coral)"></span><span>Portfolio</span><span class="cl-value" id="cl-port">+0%</span></div>
-        <div class="cl-item"><span class="cl-line" style="background:var(--slate);opacity:.7"></span><span>S&amp;P 500</span><span class="cl-value" id="cl-spx">+0%</span></div>
+        <div class="cl-item"><span class="cl-line" style="background:var(--coral)"></span><span id="cl-port-label">Now</span><span class="cl-value" id="cl-port-val">$0</span></div>
+        <div class="cl-item"><span style="font-weight:600">Change</span><span class="cl-value" id="cl-port-change">$0</span></div>
       </div>
       <div class="chart-canvas"><canvas id="perfChart"></canvas></div>
       <div class="tf-row" style="margin-top:14px" id="timeframe">
         <button class="tf-btn" data-tf="6M">6M</button>
+        <button class="tf-btn active" data-tf="YTD">YTD</button>
         <button class="tf-btn" data-tf="1Y">1Y</button>
-        <button class="tf-btn active" data-tf="2Y">2Y</button>
+        <button class="tf-btn" data-tf="2Y">2Y</button>
         <button class="tf-btn" data-tf="ALL">ALL</button>
       </div>
-      <div class="bench-summary" id="benchSummary"></div>
     </div>
 
     <div id="groups"></div>
 
     <div class="card">
+      <div class="card-head"><span class="card-title">Money Added to Portfolio</span></div>
+      <div class="chart-legend" id="contribLegend"></div>
+      <div class="chart-canvas"><canvas id="contribChart"></canvas></div>
+      <div class="tf-row" style="margin-top:14px" id="contribTimeframe">
+        <button class="tf-btn" data-tf="6M">6M</button>
+        <button class="tf-btn active" data-tf="YTD">YTD</button>
+        <button class="tf-btn" data-tf="1Y">1Y</button>
+        <button class="tf-btn" data-tf="2Y">2Y</button>
+        <button class="tf-btn" data-tf="ALL">ALL</button>
+      </div>
+      <div class="bench-summary"><span class="lbl">Total Added · <span id="contribRange">YTD</span></span><span class="val" id="contribTotal">$0</span></div>
+    </div>
+
+    <div class="card">
       <div class="card-head"><span class="card-title">Dividend Income</span></div>
       <div class="div-yield-row">
-        <div class="div-yield-card featured"><div class="dy-label">Trailing Yield</div><div class="dy-value coral" id="dyYield"></div><div class="dy-sub" id="dyYieldSub"></div></div>
+        <div class="div-yield-card featured"><div class="dy-label">2026 YTD</div><div class="dy-value coral" id="dy2026"></div><div class="dy-sub" id="dy2026Sub"></div></div>
+        <div class="div-yield-card"><div class="dy-label">2025 YTD <span style="opacity:.6;font-weight:600;letter-spacing:0;text-transform:none">same period</span></div><div class="dy-value" id="dy2025YTD"></div><div class="dy-sub" id="dy2025YTDSub"></div></div>
+        <div class="div-yield-card"><div class="dy-label">Trailing Yield</div><div class="dy-value" id="dyYield"></div><div class="dy-sub" id="dyYieldSub"></div></div>
         <div class="div-yield-card"><div class="dy-label">Avg Monthly</div><div class="dy-value" id="dyMonthly"></div><div class="dy-sub" id="dyMonthlySub"></div></div>
-        <div class="div-yield-card"><div class="dy-label">2025 Total</div><div class="dy-value" id="dy2025"></div><div class="dy-sub">Full year</div></div>
-        <div class="div-yield-card"><div class="dy-label">2026 YTD</div><div class="dy-value" id="dy2026"></div><div class="dy-sub" id="dy2026Sub"></div></div>
       </div>
+      <div class="bench-summary" id="divYtdCompare" style="margin-top:0;margin-bottom:14px"></div>
       <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:8px">Monthly Income</div>
       <div class="div-bar-chart"><canvas id="divChart"></canvas></div>
       <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin:6px 0 10px">Recent Payments</div>
@@ -546,6 +564,11 @@ function compute(raw) {
   }
   const div_2025_total = divRows.filter(r => r.date.getFullYear() === 2025).reduce((s, r) => s + r.amount, 0);
   const div_2026_ytd = divRows.filter(r => r.date.getFullYear() === 2026).reduce((s, r) => s + r.amount, 0);
+  // 2025 YTD same period (Jan 1 → today's month/day) for apples-to-apples comparison
+  const todayKey = today.getMonth() * 100 + today.getDate();
+  const div_2025_ytd_same = divRows
+    .filter(r => r.date.getFullYear() === 2025 && (r.date.getMonth() * 100 + r.date.getDate()) <= todayKey)
+    .reduce((s, r) => s + r.amount, 0);
   const div_recent = divRows.slice(0, 8).map(r => ({
     date: r.date.toISOString().slice(0, 10),
     ticker: r.ticker,
@@ -654,6 +677,65 @@ function compute(raw) {
     value: h.sp500tr
   })).sort((a, b) => a.date.localeCompare(b.date));
 
+  // ---- S&P 500 YTD % (live SP500TR vs end-2025 close) ----
+  const sp500_end_2025 = (spx.find(p => p.date === "2025-12-31") || {}).value || 0;
+  const sp500_now = prices.SP500TR || (spx.length ? spx[spx.length - 1].value : 0);
+  const sp500_ytd_pct = sp500_end_2025 ? +(((sp500_now - sp500_end_2025) / sp500_end_2025) * 100).toFixed(2) : 0;
+
+  // ---- Money added to portfolio (per month, per group) ----
+  // Real new money in: BUY orders for ETFs, crypto purchases (TOTAL USD), 401k Plan/Contribution rows.
+  // Excludes: dividends, market fluctuation, fees, sells.
+  const contribMap = {};
+  function addContrib(date, group, amount) {
+    if (!date || !amount || amount <= 0) return;
+    const m = isoMonth(date);
+    if (!contribMap[m]) contribMap[m] = { month: m, QQQ: 0, SCHD: 0, Crypto: 0, Cash: 0, "401(k)": 0 };
+    contribMap[m][group] += amount;
+  }
+  function buyTotal(r) {
+    return toNum(r.Total) || (toNum(r.QTD) * toNum(r.Price));
+  }
+  // Equity ledgers (Brazilian dd/mm/yyyy)
+  findSheet(raw, "QQQ").forEach(r => {
+    if (String(r.Type || "").toUpperCase().trim() === "BUY") addContrib(toDate(r.Date, "dmy"), "QQQ", buyTotal(r));
+  });
+  findSheet(raw, "SCHD").forEach(r => {
+    if (String(r.Type || "").toUpperCase().trim() === "BUY") addContrib(toDate(r.Date, "dmy"), "SCHD", buyTotal(r));
+  });
+  findSheet(raw, "TAXM").forEach(r => {
+    if (String(r.Type || "").toUpperCase().trim() === "BUY") addContrib(toDate(r.Date, "dmy"), "Cash", buyTotal(r));
+  });
+  findSheet(raw, "LFTB11").forEach(r => {
+    if (String(r.Type || "").toUpperCase().trim() === "BUY") addContrib(toDate(r.Date, "dmy"), "Cash", buyTotal(r));
+  });
+  // Crypto (Date USA mdy, sum TOTAL USD)
+  function cryptoContribs(name) {
+    findSheet(raw, name).forEach(r => {
+      const tk = Object.keys(r).find(k => /total\s*usd/i.test(k));
+      const amt = tk ? toNum(r[tk]) : 0;
+      addContrib(toDate(r["Date USA"] || r.Date, "mdy"), "Crypto", amt);
+    });
+  }
+  cryptoContribs("BTC");
+  cryptoContribs("ETH");
+  // 401k Fernando — Plan Contribution Amount
+  vfRows.forEach(r => {
+    if (/Plan Contribution/i.test(String(r.Type || ""))) addContrib(toDate(r.Date, "mdy"), "401(k)", toNum(r.Amount));
+  });
+  // 401k Bruna — Contribution Amount (excludes Misc Receipt, Dividend, Market Fluctuation, Fee)
+  brRows.forEach(r => {
+    const t = String(r["Activity Type"] || "").trim();
+    if (/Contribution/i.test(t) && !/Fee/i.test(t)) addContrib(toDate(r.Date, "mdy"), "401(k)", toNum(r.Amount));
+  });
+  const contributions_monthly = Object.values(contribMap).sort((a, b) => a.month.localeCompare(b.month)).map(m => ({
+    month: m.month,
+    QQQ: +m.QQQ.toFixed(2),
+    SCHD: +m.SCHD.toFixed(2),
+    Crypto: +m.Crypto.toFixed(2),
+    Cash: +m.Cash.toFixed(2),
+    "401(k)": +m["401(k)"].toFixed(2)
+  }));
+
   // ---- Final schema ----
   return {
     as_of: new Date().toISOString().slice(0, 10),
@@ -667,9 +749,12 @@ function compute(raw) {
     allocation,
     history,
     spx,
+    sp500_ytd_pct,
+    contributions_monthly,
     dividends_monthly,
     div_recent,
     div_2025_total: +div_2025_total.toFixed(2),
+    div_2025_ytd_same: +div_2025_ytd_same.toFixed(2),
     div_2026_ytd: +div_2026_ytd.toFixed(2),
     fx: { usd_brl_rate: usdBrl },
     data_quality_notes: [
@@ -747,7 +832,7 @@ const GROUPS = {
 // ============================================================
 // RENDER
 // ============================================================
-let perfChart = null, divChart = null;
+let perfChart = null, divChart = null, contribChart = null;
 function render(D) {
   const tv = split(D.total_value);
   $("totalValue").innerHTML = `$${tv.int}<span class="cents">.${tv.dec}</span>`;
@@ -801,6 +886,17 @@ function render(D) {
       <div class="quick-pct ${ytdCls}">${ytdStr}</div>`;
     qList.appendChild(row);
   });
+  // S&P 500 benchmark row — YTD-only reference for whether it's a good or bad year overall
+  const spxYtd = D.sp500_ytd_pct || 0;
+  const spxCls = spxYtd >= 0 ? "up" : "down";
+  const spxRow = document.createElement("div");
+  spxRow.className = "quick-row benchmark";
+  spxRow.innerHTML = `
+    <div class="quick-name"><span class="swatch-q"></span><span>S&amp;P 500 Benchmark</span></div>
+    <div class="quick-val" style="color:var(--text-3)">—</div>
+    <div class="quick-pct" style="color:var(--text-3)">—</div>
+    <div class="quick-pct ${spxCls}">${sgn(spxYtd)}${fmt(Math.abs(spxYtd), 1)}%<span class="qp-sub">market</span></div>`;
+  qList.appendChild(spxRow);
 
   // Allocation donut
   const allocSorted = Object.entries(D.allocation).map(([k, v]) => ({ label: k, value: v, color: (GROUPS[k] || { color: "#888" }).color })).sort((a, b) => b.value - a.value);
@@ -834,31 +930,30 @@ function render(D) {
     legendEl.appendChild(row);
   });
 
-  // Performance vs S&P 500 (rebased to 100)
+  // Portfolio Value over time ($ — actual value, not rebased)
   const ctx = $("perfChart").getContext("2d");
-  function rebase(s) { const v0 = s[0].value; return s.map(p => ({ x: p.date, y: (p.value / v0) * 100 })); }
-  function alignSpx(portStartDate) {
-    // Find SPX index whose date matches portStartDate
-    const idx = D.spx.findIndex(p => p.date === portStartDate);
-    return idx >= 0 ? D.spx.slice(idx) : D.spx;
+  function tfSlice(series, tf) {
+    if (tf === "YTD") {
+      const idx = series.findIndex(h => h.date >= "2025-12-31");
+      return idx >= 0 ? series.slice(idx) : series.slice();
+    }
+    let n;
+    switch (tf) { case "6M": n = 6; break; case "1Y": n = 12; break; case "2Y": n = 24; break; default: n = series.length; }
+    return series.slice(-n);
   }
   function drawChart(tf) {
-    let n;
-    switch (tf) { case "6M": n = 6; break; case "1Y": n = 12; break; case "2Y": n = 24; break; default: n = D.history.length; }
-    const port = D.history.slice(-n);
-    const portR = rebase(port);
-    const spxAligned = alignSpx(port[0].date);
-    const spxR = spxAligned.length ? rebase(spxAligned) : portR.map(p => ({ x: p.x, y: 100 }));
-    const portChange = portR[portR.length - 1].y - 100;
-    const spxChange = spxR.length ? spxR[spxR.length - 1].y - 100 : 0;
-    $("cl-port").textContent = (portChange >= 0 ? "+" : "") + portChange.toFixed(1) + "%";
-    $("cl-port").style.color = portChange >= 0 ? "var(--up)" : "var(--down)";
-    $("cl-spx").textContent = (spxChange >= 0 ? "+" : "") + spxChange.toFixed(1) + "%";
-    $("cl-spx").style.color = spxChange >= 0 ? "var(--up)" : "var(--down)";
-    const diff = portChange - spxChange;
-    $("benchSummary").innerHTML = `<span class="lbl">vs Benchmark</span><span class="val" style="color:${diff >= 0 ? 'var(--up)' : 'var(--down)'}">${diff >= 0 ? "↑" : "↓"} ${diff >= 0 ? "+" : ""}${diff.toFixed(1)}% ${diff >= 0 ? "outperforming" : "underperforming"}</span>`;
+    const port = tfSlice(D.history, tf);
+    if (!port.length) return;
+    const startV = port[0].value;
+    const endV = port[port.length - 1].value;
+    const change = endV - startV;
+    const changePct = startV ? (change / startV) * 100 : 0;
+    $("cl-port-val").textContent = "$" + fmt(endV, 0);
+    $("cl-port-label").textContent = "Now";
+    $("cl-port-change").innerHTML = `${sgn(change)}$${fmt(Math.abs(change), 0)} <span style="opacity:.6">(${sgn(changePct)}${fmt(Math.abs(changePct), 1)}%)</span>`;
+    $("cl-port-change").style.color = change >= 0 ? "var(--up)" : "var(--down)";
     const grad = ctx.createLinearGradient(0, 0, 0, 200);
-    grad.addColorStop(0, "rgba(224,120,86,0.18)");
+    grad.addColorStop(0, "rgba(224,120,86,0.22)");
     grad.addColorStop(1, "rgba(224,120,86,0)");
     if (perfChart) perfChart.destroy();
     perfChart = new Chart(ctx, {
@@ -866,8 +961,7 @@ function render(D) {
       data: {
         labels: port.map(p => p.date),
         datasets: [
-          { label: "Portfolio", data: portR.map(p => p.y), borderColor: "#E07856", borderWidth: 2, backgroundColor: grad, fill: true, tension: 0.35, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: "#E07856", pointHoverBorderColor: "#fff", pointHoverBorderWidth: 2 },
-          { label: "S&P 500", data: spxR.map(p => p.y), borderColor: "#7E8FA0", borderWidth: 1.5, borderDash: [4, 4], fill: false, tension: 0.35, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: "#7E8FA0", pointHoverBorderColor: "#fff", pointHoverBorderWidth: 2 }
+          { label: "Portfolio Value", data: port.map(p => p.value), borderColor: "#E07856", borderWidth: 2.2, backgroundColor: grad, fill: true, tension: 0.35, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: "#E07856", pointHoverBorderColor: "#fff", pointHoverBorderWidth: 2 }
         ]
       },
       options: {
@@ -880,23 +974,23 @@ function render(D) {
             borderColor: "rgba(42,32,26,.08)", borderWidth: 1, padding: 10,
             titleFont: { family: "Inter", size: 11, weight: 600 },
             bodyFont: { family: "Inter", size: 12, weight: 700 },
-            displayColors: true, boxWidth: 8, boxHeight: 8, boxPadding: 4,
-            callbacks: { title: i => i[0].label, label: c => " " + c.dataset.label + ": " + (c.parsed.y >= 100 ? "+" : "") + (c.parsed.y - 100).toFixed(1) + "%" }
+            displayColors: false,
+            callbacks: { title: i => i[0].label, label: c => " $" + c.parsed.y.toLocaleString("en-US", { maximumFractionDigits: 0 }) }
           }
         },
         scales: {
           x: { grid: { display: false }, border: { display: false }, ticks: { color: "#A89A8E", font: { family: "Inter", size: 10, weight: 500 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 5,
             callback: function (v) { const l = this.getLabelForValue(v); const [y, m] = l.split("-"); return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][parseInt(m)-1] + " " + y.slice(2); } } },
-          y: { grid: { color: "rgba(42,32,26,.05)", drawTicks: false }, border: { display: false }, ticks: { color: "#A89A8E", font: { family: "Inter", size: 10, weight: 500 }, padding: 6, callback: v => (v >= 100 ? "+" : "") + (v - 100).toFixed(0) + "%" } }
+          y: { grid: { color: "rgba(42,32,26,.05)", drawTicks: false }, border: { display: false }, ticks: { color: "#A89A8E", font: { family: "Inter", size: 10, weight: 500 }, padding: 6, callback: v => v >= 1000 ? "$" + (v / 1000).toFixed(0) + "K" : "$" + v } }
         },
         interaction: { intersect: false, mode: "index" }
       }
     });
   }
-  drawChart("2Y");
+  drawChart("YTD");
   $("timeframe").onclick = e => {
     const btn = e.target.closest(".tf-btn"); if (!btn) return;
-    document.querySelectorAll(".tf-btn").forEach(b => b.classList.remove("active"));
+    $("timeframe").querySelectorAll(".tf-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
     drawChart(btn.dataset.tf);
   };
@@ -953,18 +1047,117 @@ function render(D) {
     groupsEl.innerHTML += groupCard("401(k)", { value: `$${s.int}<span class="cents">.${s.dec}</span>`, pl, plPct, cost, totalValue: total, posCount: 2, extraStat: statBlock("Contributions", "$" + fmt(contrib, 0), "Total deposited") }, holdingItem("VFIFX", v, { subline: `Fernando · ${fmt(v.qty, 0)} sh` }) + holdingItem("TRRNX", w, { subline: `Wife · ${fmt(w.qty, 0)} sh` }));
   }
 
+  // Money Added to Portfolio (stacked bar by group, with same timeframe selectors as Portfolio Value)
+  const contribCtx = $("contribChart").getContext("2d");
+  const CONTRIB_GROUPS = ["QQQ", "SCHD", "Crypto", "Cash", "401(k)"];
+  function contribTfSlice(tf) {
+    const all = D.contributions_monthly || [];
+    if (!all.length) return all;
+    if (tf === "ALL") return all;
+    if (tf === "YTD") {
+      return all.filter(m => m.month >= "2026-01");
+    }
+    const n = tf === "6M" ? 6 : tf === "1Y" ? 12 : tf === "2Y" ? 24 : all.length;
+    // Pad: ensure last N months ending current month are present (fill missing with zeros)
+    const today = new Date();
+    const months = [];
+    for (let i = n - 1; i >= 0; i--) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+      const found = all.find(m => m.month === key);
+      months.push(found || { month: key, QQQ: 0, SCHD: 0, Crypto: 0, Cash: 0, "401(k)": 0 });
+    }
+    return months;
+  }
+  // Render legend chips
+  const cLegend = $("contribLegend"); cLegend.innerHTML = "";
+  CONTRIB_GROUPS.forEach(k => {
+    const g = GROUPS[k];
+    const it = document.createElement("div");
+    it.className = "cl-item";
+    it.innerHTML = `<span class="cl-line" style="background:${g.color}"></span><span>${g.title}</span>`;
+    cLegend.appendChild(it);
+  });
+  function drawContrib(tf) {
+    const series = contribTfSlice(tf);
+    const labels = series.map(m => m.month);
+    const datasets = CONTRIB_GROUPS.map(k => ({
+      label: GROUPS[k].title,
+      data: series.map(m => +(m[k] || 0).toFixed(2)),
+      backgroundColor: GROUPS[k].color,
+      borderRadius: 4,
+      borderSkipped: false,
+      stack: "added"
+    }));
+    const total = series.reduce((s, m) => s + CONTRIB_GROUPS.reduce((a, k) => a + (m[k] || 0), 0), 0);
+    $("contribTotal").textContent = "$" + fmt(total, 0);
+    $("contribRange").textContent = tf === "YTD" ? "YTD" : (tf === "ALL" ? "All time" : "Last " + tf);
+    if (contribChart) contribChart.destroy();
+    contribChart = new Chart(contribCtx, {
+      type: "bar",
+      data: { labels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        animation: { duration: 500, easing: "easeOutCubic" },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: "#FFFFFF", titleColor: "#A89A8E", bodyColor: "#2A201A",
+            borderColor: "rgba(42,32,26,.08)", borderWidth: 1, padding: 10,
+            titleFont: { family: "Inter", size: 11, weight: 600 },
+            bodyFont: { family: "Inter", size: 12, weight: 700 },
+            displayColors: true, boxWidth: 8, boxHeight: 8, boxPadding: 4,
+            callbacks: {
+              title: i => i[0].label,
+              label: c => " " + c.dataset.label + ": $" + c.parsed.y.toLocaleString("en-US", { maximumFractionDigits: 0 }),
+              footer: items => {
+                const sum = items.reduce((s, it) => s + it.parsed.y, 0);
+                return "Total: $" + sum.toLocaleString("en-US", { maximumFractionDigits: 0 });
+              }
+            }
+          }
+        },
+        scales: {
+          x: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { color: "#A89A8E", font: { family: "Inter", size: 10, weight: 500 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8,
+            callback: function (v) { const l = this.getLabelForValue(v); const [y, m] = l.split("-"); return ["J","F","M","A","M","J","J","A","S","O","N","D"][parseInt(m) - 1] + (m === "01" ? " " + y.slice(2) : ""); } } },
+          y: { stacked: true, grid: { color: "rgba(42,32,26,.05)", drawTicks: false }, border: { display: false }, ticks: { color: "#A89A8E", font: { family: "Inter", size: 10, weight: 500 }, padding: 6, maxTicksLimit: 5, callback: v => v >= 1000 ? "$" + (v / 1000).toFixed(0) + "K" : "$" + v } }
+        },
+        interaction: { intersect: false, mode: "index" }
+      }
+    });
+  }
+  drawContrib("YTD");
+  $("contribTimeframe").onclick = e => {
+    const btn = e.target.closest(".tf-btn"); if (!btn) return;
+    $("contribTimeframe").querySelectorAll(".tf-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    drawContrib(btn.dataset.tf);
+  };
+
   // Dividends
   const ttm = D.dividends_monthly.slice(-12).reduce((a, b) => a + b.amount, 0);
   const yieldPct = D.total_value ? (ttm / D.total_value) * 100 : 0;
   const monthlyAvg = ttm / 12;
   const ytdMonths = D.dividends_monthly.filter(d => d.month && d.month.startsWith("2026")).length;
+  const div26 = D.div_2026_ytd || 0;
+  const div25Same = D.div_2025_ytd_same || 0;
+  const divDelta = div26 - div25Same;
+  const divDeltaPct = div25Same ? (divDelta / div25Same) * 100 : 0;
+  const todayLabel = (new Date()).toLocaleDateString("en-US", { month: "short", day: "numeric" });
   $("dyYield").textContent = fmt(yieldPct) + "%";
   $("dyYieldSub").textContent = "$" + fmt(ttm, 0) + " trailing 12mo";
   $("dyMonthly").textContent = "$" + fmt(monthlyAvg, 0);
   $("dyMonthlySub").textContent = "TTM avg";
-  $("dy2025").textContent = "$" + fmt(D.div_2025_total || 0, 0);
-  $("dy2026").textContent = "$" + fmt(D.div_2026_ytd || 0, 0);
-  $("dy2026Sub").textContent = ytdMonths + " months";
+  $("dy2026").textContent = "$" + fmt(div26, 0);
+  $("dy2026Sub").textContent = "Through " + todayLabel;
+  $("dy2025YTD").textContent = "$" + fmt(div25Same, 0);
+  $("dy2025YTDSub").textContent = "Jan 1 → " + todayLabel + " 2025";
+  if (div25Same > 0) {
+    const cls = divDelta >= 0 ? "var(--up)" : "var(--down)";
+    $("divYtdCompare").innerHTML = `<span class="lbl">2026 YTD vs 2025 same period</span><span class="val" style="color:${cls}">${divDelta >= 0 ? "↑" : "↓"} ${sgn(divDelta)}$${fmt(Math.abs(divDelta), 0)} (${sgn(divDeltaPct)}${fmt(Math.abs(divDeltaPct), 1)}%)</span>`;
+  } else {
+    $("divYtdCompare").innerHTML = `<span class="lbl">2026 YTD vs 2025 same period</span><span class="val" style="color:var(--text-3)">No 2025 data for this window</span>`;
+  }
 
   const divCtx = $("divChart").getContext("2d");
   const last12 = D.dividends_monthly.slice(-12);
