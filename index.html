@@ -69,10 +69,11 @@ body{background:var(--bg);color:var(--text);font-family:"Plus Jakarta Sans",-app
 .pill-up{background:var(--up-soft);color:var(--up)}
 .pill-down{background:var(--down-soft);color:var(--down)}
 .pill-arrow{font-size:10px}
-.compare{font-size:12px;color:var(--text-2);font-weight:500}
-.compare strong{color:var(--text);font-weight:700}
+.hero-pl-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);margin-top:18px;margin-bottom:8px}
+.hero-pl-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hero-pl-amount{font-family:"Inter",sans-serif;font-size:15px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
 .hero-divider{height:1px;background:var(--border);margin:18px 0 16px}
-.hero-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hero-meta{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .meta-item{display:flex;flex-direction:column;gap:2px}
 .meta-label{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3)}
 .meta-value{font-size:14px;font-weight:700;color:var(--text);font-family:"Inter",sans-serif}
@@ -188,18 +189,20 @@ footer{text-align:center;font-size:11px;color:rgba(255,255,255,.6);font-weight:5
     <div class="card hero">
       <div class="hero-label">Total Portfolio Value</div>
       <div class="hero-value" id="totalValue"></div>
-      <div class="hero-row"><span class="pill" id="pillAll"></span><span class="compare" id="compareAll"></span></div>
+      <div class="hero-pl-label">All-time gain</div>
+      <div class="hero-pl-row">
+        <span class="pill" id="pillAll"></span>
+        <span class="hero-pl-amount" id="amtAll"></span>
+      </div>
       <div class="hero-divider"></div>
       <div class="hero-meta">
         <div class="meta-item"><span class="meta-label">Year-End 2025</span><span class="meta-value" id="ytdEnd2025"></span></div>
-        <div class="meta-item"><span class="meta-label">YTD Change</span><span class="meta-value" id="ytdChange"></span></div>
-        <div class="meta-item"><span class="meta-label">Last Month</span><span class="meta-value" id="moChange"></span></div>
-        <div class="meta-item"><span class="meta-label">Cost Basis</span><span class="meta-value" id="costBasis"></span></div>
+        <div class="meta-item"><span class="meta-label">YTD Return</span><span class="meta-value" id="ytdChange"></span></div>
       </div>
     </div>
 
     <div class="card quick">
-      <div class="card-head"><span class="card-title">Quick Overview</span><span class="card-action">vs end-2025</span></div>
+      <div class="card-head"><span class="card-title">Quick Overview</span><span class="card-action">YTD = price return</span></div>
       <div class="quick-grid-head">
         <div>Asset</div>
         <div class="qh-r">Value</div>
@@ -671,6 +674,22 @@ function compute(raw) {
   const end_2025_value = end_2025_detailed ? end_2025_detailed.value : null;
   const end_2025_by_group = end_2025_detailed ? end_2025_detailed.groups : null;
 
+  // Price-only YTD: hold the same shares we had at 2025-12-31, mark to today's prices.
+  // Strips 2026 contributions/withdrawals so per-group YTD is apples-to-apples vs the SP500TR sentinel.
+  const e25 = new Date(Date.UTC(2025, 11, 31));
+  const ytd_priced_by_group = {
+    QQQ:      sharesAt(qqqTx,  e25, "buysell") * (prices.QQQ    || 0),
+    SCHD:     sharesAt(schdTx, e25, "buysell") * (prices.SCHD   || 0),
+    Crypto:   sharesAt(btcTx,  e25, "crypto")  * (prices.BTC    || 0)
+            + sharesAt(ethTx,  e25, "crypto")  * (prices.ETH    || 0),
+    Cash:     sharesAt(taxmTx, e25, "buysell") * (prices.TAXM   || 0)
+            + sharesAt(bilTx,  e25, "buysell") * (prices.BIL    || 0)
+            + sharesAt(lftbTx, e25, "buysell") * (prices.LFTB11 || 0),
+    "401(k)": sharesAt(vfTx,   e25, "vfifx")   * (prices.VFIFX  || 0)
+            + sharesAt(trTx,   e25, "trrnx")   * (trrnxPrice    || 0)
+  };
+  const ytd_priced_total = Object.values(ytd_priced_by_group).reduce((a, b) => a + b, 0);
+
   // ---- S&P 500 series (live from HISTORIC PRICES SP500TR column) ----
   const spx = histRows.filter(h => h.sp500tr > 0).map(h => ({
     date: h.date.toISOString().slice(0, 10),
@@ -745,6 +764,8 @@ function compute(raw) {
     unrealized_pct: total_cost > 0 ? +(((total_value - total_cost) / total_cost) * 100).toFixed(2) : 0,
     end_2025_value,
     end_2025_by_group,
+    ytd_priced_by_group,
+    ytd_priced_total: +ytd_priced_total.toFixed(2),
     positions,
     allocation,
     history,
@@ -762,6 +783,7 @@ function compute(raw) {
       prices.BTC && prices.ETH && prices.BTC > 1000 && prices.ETH < 1000 ? null : "BTC/ETH prices auto-corrected — they appear swapped in your Real Time Price tab.",
       "TRRNX uses trust-class price ($" + trrnxPrice.toFixed(2) + ") from your latest 401k Bruna transaction, not the public mutual fund price.",
       "S&P 500 benchmark uses the SP500TR total-return series from your Historic Prices tab.",
+      "YTD figures are price-only returns — same shares you held on 2025-12-31 marked to today's prices, so per-asset YTD compares apples-to-apples with the S&P 500 sentinel. New 2026 contributions don't inflate the percentage.",
       "LFTB11 is now tracked in USD throughout (price + cost basis from your sheet)."
     ].filter(Boolean)
   };
@@ -840,21 +862,18 @@ function render(D) {
   $("allocAsOf").textContent = D.as_of;
 
   const end2025 = D.end_2025_value || 0;
-  const ytdChg = D.total_value - end2025;
+  // YTD = price-only return (apples-to-apples with S&P 500 sentinel below).
+  const ytdChg = (D.ytd_priced_total || 0) - end2025;
   const ytdPct = end2025 ? (ytdChg / end2025) * 100 : 0;
-  const histLast = D.history[D.history.length - 1].value;
-  const histPrev = D.history.length > 1 ? D.history[D.history.length - 2].value : histLast;
-  const moChg = histLast - histPrev;
-  const moPct = histPrev ? (moChg / histPrev) * 100 : 0;
 
   const pillAll = $("pillAll");
   pillAll.innerHTML = `<span class="pill-arrow">${arrow(D.unrealized_pct)}</span> ${sgn(D.unrealized_pct)}${fmt(D.unrealized_pct)}%`;
   pillAll.className = "pill " + (D.unrealized_pct >= 0 ? "pill-up" : "pill-down");
-  $("compareAll").innerHTML = `<strong>${sgn(D.unrealized_pl)}$${fmt(Math.abs(D.unrealized_pl), 0)}</strong> all-time gain`;
+  const amtAll = $("amtAll");
+  amtAll.textContent = `${sgn(D.unrealized_pl)}$${fmt(Math.abs(D.unrealized_pl), 0)}`;
+  amtAll.style.color = D.unrealized_pl >= 0 ? "var(--up)" : "var(--down)";
   $("ytdEnd2025").innerHTML = `$${fmt(end2025, 0)}`;
   $("ytdChange").innerHTML = `<span style="color:${ytdChg >= 0 ? 'var(--up)' : 'var(--down)'}">${sgn(ytdPct)}${fmt(ytdPct)}%</span><span class="sub">${sgn(ytdChg)}$${fmt(Math.abs(ytdChg), 0)}</span>`;
-  $("moChange").innerHTML = `<span style="color:${moChg >= 0 ? 'var(--up)' : 'var(--down)'}">${sgn(moPct)}${fmt(moPct)}%</span><span class="sub">${sgn(moChg)}$${fmt(Math.abs(moChg), 0)}</span>`;
-  $("costBasis").innerHTML = `$${fmt(D.total_cost, 0)}`;
 
   // Quick Overview card (above Allocation, below Total)
   const qList = $("quickList");
@@ -871,7 +890,9 @@ function render(D) {
     const allTimePl = gv.value - gv.cost;
     const allTimePct = gv.cost > 0 ? (allTimePl / gv.cost) * 100 : 0;
     const end25 = (D.end_2025_by_group && D.end_2025_by_group[k]) || 0;
-    const ytdChg = end25 ? gv.value - end25 : 0;
+    // Price-only YTD: same end-2025 shares marked to today's prices, so it compares to S&P 500 fairly.
+    const ytdNow = (D.ytd_priced_by_group && D.ytd_priced_by_group[k]) || 0;
+    const ytdChg = end25 ? ytdNow - end25 : 0;
     const ytdPct = end25 ? (ytdChg / end25) * 100 : 0;
     const allCls = allTimePl >= 0 ? "up" : "down";
     const ytdCls = ytdChg >= 0 ? "up" : "down";
