@@ -796,7 +796,11 @@ function compute(raw) {
       useKeys = true;
       yearKeys = yearKeyHits.slice(0, 4).sort();
       yearOrder = yearKeys.map(k => +k);
-      paramKey = sampleKeys.find(k => !yearKeyHits.includes(k)) || sampleKeys[0];
+      // NOTE: param column key is often the empty string "" (Apps Script keeps it
+      // when the sheet's first cell of row 1 is blank). Don't `|| sampleKeys[0]` —
+      // "" is falsy and would fall through to a year key, breaking everything.
+      const foundParam = sampleKeys.find(k => !yearKeyHits.includes(k));
+      paramKey = foundParam !== undefined ? foundParam : sampleKeys[0];
     } else {
       // Layout (a): scan for the year-row by values
       for (const r of rows) {
