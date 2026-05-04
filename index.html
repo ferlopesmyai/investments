@@ -273,10 +273,11 @@ footer{text-align:center;font-size:11px;color:rgba(255,255,255,.6);font-weight:5
 
     <div class="card" id="forecastCard">
       <div class="card-head"><span class="card-title">Forecast 2026 – 2029</span><span class="card-action" id="forecastNote">Reinvested · DCA</span></div>
-      <div class="chart-legend">
-        <div class="cl-item"><span class="cl-line" style="background:var(--teal)"></span><span>End 2029</span><span class="cl-value" id="cl-fc-end">$0</span></div>
-        <div class="cl-item"><span style="font-weight:600">vs Today</span><span class="cl-value" id="cl-fc-delta">$0</span></div>
+      <div class="div-yield-row" style="grid-template-columns:1fr 1fr">
+        <div class="div-yield-card"><div class="dy-label">Today</div><div class="dy-value" id="fc-today">$0</div><div class="dy-sub" id="fc-today-sub"></div></div>
+        <div class="div-yield-card featured" style="background:var(--teal-soft, #DCEFEB)"><div class="dy-label" style="color:var(--teal)">End 2029 (est.)</div><div class="dy-value" id="fc-end" style="color:var(--teal)">$0</div><div class="dy-sub" id="fc-delta-sub"></div></div>
       </div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin:6px 0 8px">Year-End Total</div>
       <div class="chart-canvas"><canvas id="forecastChart"></canvas></div>
     </div>
 
@@ -829,10 +830,15 @@ function compute(raw) {
         ? String(r[paramKey] || "").trim()
         : String(Object.values(r)[paramIdx] || "").trim();
       if (!param) return;
+      // Rate rows (yields, growth, FX) are always between 0 and 1 in real life.
+      // If Apps Script returned them as raw integers (e.g. 10 for "10%"), divide by 100.
+      const isRate = /^(Dividend Yield|Growth|USD\/?BRL)/i.test(param);
       const yearVals = {};
       yearOrder.forEach((y, yi) => {
         const v = useKeys ? r[yearKeys[yi]] : Object.values(r)[valueIdxs[yi]];
-        yearVals[y] = readNum(v);
+        let n = readNum(v);
+        if (isRate && Math.abs(n) > 1) n = n / 100;
+        yearVals[y] = n;
       });
       if (/^New Money Invested\s+/i.test(param)) {
         out.newMoney[normalizeFutureAsset(param)] = yearVals;
@@ -1368,41 +1374,38 @@ function render(D) {
     const endVal = values[values.length - 1];
     const delta = endVal - todayVal;
     const deltaPct = todayVal ? (delta / todayVal) * 100 : 0;
-    $("cl-fc-end").textContent = "$" + fmt(endVal, 0);
-    $("cl-fc-delta").innerHTML = `${sgn(delta)}$${fmt(Math.abs(delta), 0)} <span style="opacity:.6">(${sgn(deltaPct)}${fmt(Math.abs(deltaPct), 1)}%)</span>`;
-    $("cl-fc-delta").style.color = delta >= 0 ? "var(--up)" : "var(--down)";
+    // Today + End 2029 cards
+    const tvSplit = fmt(todayVal, 0);
+    const evSplit = fmt(endVal, 0);
+    $("fc-today").textContent = "$" + tvSplit;
+    $("fc-today-sub").textContent = "Current value (baseline)";
+    $("fc-end").textContent = "$" + evSplit;
+    $("fc-delta-sub").innerHTML = `<span style="color:${delta >= 0 ? 'var(--up)' : 'var(--down)'};font-weight:700">${sgn(delta)}$${fmt(Math.abs(delta), 0)} (${sgn(deltaPct)}${fmt(Math.abs(deltaPct), 0)}%)</span>`;
     if (typeof fc.months_left_2026 === "number" && fc.months_left_2026 < 12 && fc.months_left_2026 > 0) {
       $("forecastNote").textContent = `Reinvested · DCA · ${fc.months_left_2026}mo left in 2026`;
     } else {
       $("forecastNote").textContent = "Reinvested · DCA";
     }
     const fcCtx = $("forecastChart").getContext("2d");
-    const grad = fcCtx.createLinearGradient(0, 0, 0, 200);
-    grad.addColorStop(0, "rgba(77,156,140,0.22)");
-    grad.addColorStop(1, "rgba(77,156,140,0)");
     if (forecastChart) forecastChart.destroy();
     forecastChart = new Chart(fcCtx, {
-      type: "line",
+      type: "bar",
       data: {
         labels,
         datasets: [{
-          label: "Total Value",
+          label: "Year-End Total",
           data: values,
-          borderColor: "#4D9C8C",
-          borderWidth: 2.4,
-          backgroundColor: grad,
-          fill: true,
-          tension: 0.32,
-          pointRadius: 4,
-          pointBackgroundColor: "#4D9C8C",
-          pointBorderColor: "#fff",
-          pointBorderWidth: 2,
-          pointHoverRadius: 6
+          backgroundColor: ["#7DBDB0", "#5FAB9C", "#4D9C8C", "#3F8979"],
+          borderRadius: 10,
+          borderSkipped: false,
+          barPercentage: 0.62,
+          categoryPercentage: 0.78
         }]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
-        animation: { duration: 500, easing: "easeOutCubic" },
+        layout: { padding: { top: 26 } },
+        animation: { duration: 600, easing: "easeOutCubic" },
         plugins: {
           legend: { display: false },
           tooltip: {
@@ -1411,15 +1414,32 @@ function render(D) {
             titleFont: { family: "Inter", size: 11, weight: 600 },
             bodyFont: { family: "Inter", size: 12, weight: 700 },
             displayColors: false,
-            callbacks: { title: i => i[0].label, label: c => " $" + c.parsed.y.toLocaleString("en-US", { maximumFractionDigits: 0 }) }
+            callbacks: { title: i => i[0].label + " (year-end)", label: c => " $" + c.parsed.y.toLocaleString("en-US", { maximumFractionDigits: 0 }) }
           }
         },
         scales: {
-          x: { grid: { display: false }, border: { display: false }, ticks: { color: "#A89A8E", font: { family: "Inter", size: 11, weight: 600 } } },
-          y: { grid: { color: "rgba(42,32,26,.05)", drawTicks: false }, border: { display: false }, ticks: { color: "#A89A8E", font: { family: "Inter", size: 10, weight: 500 }, padding: 6, maxTicksLimit: 5, callback: v => v >= 1e6 ? "$" + (v / 1e6).toFixed(1) + "M" : v >= 1000 ? "$" + (v / 1000).toFixed(0) + "K" : "$" + v } }
-        },
-        interaction: { intersect: false, mode: "index" }
-      }
+          x: { grid: { display: false }, border: { display: false }, ticks: { color: "#2A201A", font: { family: "Inter", size: 12, weight: 700 } } },
+          y: { beginAtZero: false, grid: { color: "rgba(42,32,26,.05)", drawTicks: false }, border: { display: false }, ticks: { color: "#A89A8E", font: { family: "Inter", size: 10, weight: 500 }, padding: 6, maxTicksLimit: 5, callback: v => v >= 1e6 ? "$" + (v / 1e6).toFixed(1) + "M" : v >= 1000 ? "$" + (v / 1000).toFixed(0) + "K" : "$" + v } }
+        }
+      },
+      plugins: [{
+        id: "barValueLabels",
+        afterDatasetsDraw(chart) {
+          const { ctx } = chart;
+          chart.data.datasets[0].data.forEach((val, i) => {
+            const meta = chart.getDatasetMeta(0).data[i];
+            if (!meta) return;
+            const label = val >= 1e6 ? "$" + (val / 1e6).toFixed(2) + "M" : "$" + (val / 1000).toFixed(0) + "K";
+            ctx.save();
+            ctx.fillStyle = "#2A201A";
+            ctx.font = "700 11px Inter, sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "bottom";
+            ctx.fillText(label, meta.x, meta.y - 6);
+            ctx.restore();
+          });
+        }
+      }]
     });
   } else {
     $("forecastCard").style.display = "none";
