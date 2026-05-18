@@ -340,6 +340,15 @@ function findSheet(raw, name) {
   return k ? raw[k] : [];
 }
 
+// Try multiple candidate sheet names (handles "_" vs " ", typos, etc.)
+function findSheetAny(raw, ...names) {
+  for (const n of names) {
+    const r = findSheet(raw, n);
+    if (r.length) return r;
+  }
+  return [];
+}
+
 // Tolerant column lookup: handles trailing/leading whitespace + case
 function getCol(row, name) {
   if (row[name] !== undefined) return row[name];
@@ -455,6 +464,58 @@ function compute(raw) {
   // ---- LFTB11 (USD-priced; sheet now tracks LFTB11 in USD end-to-end) ----
   const lftbPrice = prices.LFTB11 || 0;
 
+  // ---- REAL ESTATE (single property, illiquid, leveraged) ----
+  // Value = Zestimate − Mortgage Balance (Original Loan − Principal Paid) → Fernando's equity in the house.
+  // Cost basis = Down Payment + Closing Cost + Remodeling (cash actually deployed).
+  // Closing + Remodeling don't translate to equity at t=0, so equity may sit BELOW cash invested
+  // until Zestimate appreciates or principal is paid down — this is the honest accounting.
+  const reRows = findSheetAny(raw, "REAL_ESTATE", "REAL ESTATE", "REAL_STATE", "REAL STATE");
+  let realEstate = null;
+  if (reRows.length) {
+    const r = reRows[0];
+    const purchasePrice    = toNum(getCol(r, "Purchase Price"));
+    const downPayment      = toNum(getCol(r, "Down Payment"));
+    const closingCost      = toNum(getCol(r, "Closing Cost"));
+    const remodelingCost   = toNum(getCol(r, "Remodeling Cost"));
+    const originalLoan     = toNum(getCol(r, "Original Loan"));
+    const principalPaid    = toNum(getCol(r, "Mortgage Principal Paid"));
+    const interestRate     = toNum(getCol(r, "Interest Rate"));
+    const zestimate        = toNum(getCol(r, "Zestimate Real Time"));
+    const zestimateAtPurch = toNum(getCol(r, "Zestimate Day of the Purchase"));
+    // Brazilian dd/mm/yyyy convention (matches the rest of the sheet)
+    const purchaseDate     = toDate(getCol(r, "Purchase Date"), "dmy");
+    const zpid             = String(getCol(r, "zpid") || "");
+
+    const cashInvested    = downPayment + closingCost + remodelingCost;
+    const mortgageBalance = Math.max(0, originalLoan - principalPaid);
+    const equity          = zestimate - mortgageBalance;
+    const gainVsCash      = equity - cashInvested;
+    const gainPctVsCash   = cashInvested > 0 ? (gainVsCash / cashInvested) * 100 : 0;
+    const appreciation    = zestimate - purchasePrice;
+    const appreciationPct = purchasePrice > 0 ? (appreciation / purchasePrice) * 100 : 0;
+
+    realEstate = {
+      zpid,
+      purchase_date: purchaseDate ? purchaseDate.toISOString().slice(0, 10) : null,
+      purchase_price: +purchasePrice.toFixed(2),
+      down_payment: +downPayment.toFixed(2),
+      closing_cost: +closingCost.toFixed(2),
+      remodeling_cost: +remodelingCost.toFixed(2),
+      original_loan: +originalLoan.toFixed(2),
+      interest_rate: interestRate,
+      principal_paid: +principalPaid.toFixed(2),
+      zestimate: +zestimate.toFixed(2),
+      zestimate_at_purchase: +zestimateAtPurch.toFixed(2),
+      cash_invested: +cashInvested.toFixed(2),
+      mortgage_balance: +mortgageBalance.toFixed(2),
+      equity: +equity.toFixed(2),
+      gain_vs_cash: +gainVsCash.toFixed(2),
+      gain_pct_vs_cash: +gainPctVsCash.toFixed(2),
+      appreciation: +appreciation.toFixed(2),
+      appreciation_pct: +appreciationPct.toFixed(2)
+    };
+  }
+
   // ---- Build positions ----
   const positions = {
     QQQ: {
@@ -542,8 +603,12 @@ function compute(raw) {
   });
 
   // ---- Aggregates ----
-  const total_value = Object.values(positions).reduce((s, p) => s + p.value, 0);
-  const total_cost = Object.values(positions).reduce((s, p) => s + p.cost, 0);
+  let total_value = Object.values(positions).reduce((s, p) => s + p.value, 0);
+  let total_cost  = Object.values(positions).reduce((s, p) => s + p.cost, 0);
+  if (realEstate) {
+    total_value += realEstate.equity;
+    total_cost  += realEstate.cash_invested;
+  }
 
   const allocation = {
     QQQ: positions.QQQ.value,
@@ -552,6 +617,7 @@ function compute(raw) {
     Cash: positions.TAXM.value + positions.LFTB11.value + positions.BIL?.value || (positions.TAXM.value + positions.LFTB11.value),
     "401(k)": positions.VFIFX.value + positions.TRRNX.value,
   };
+  if (realEstate) allocation["Real Estate"] = realEstate.equity;
 
   // ---- DIVIDENDS ----
   const divRows = findSheet(raw, "DIVIDENDS").filter(r => {
@@ -665,17 +731,25 @@ function compute(raw) {
     // user holds trust class (~$53). Scale up by ratio.
     const trrnxScale = trrnxPrice && h.trrnx ? trrnxPrice / h.trrnx : 2.182;
     const tr = sharesAt(trTx, t, "trrnx") * h.trrnx * trrnxScale;
+    // Real Estate equity (constant from purchase date forward — only one Zestimate cell today).
+    // Pre-purchase rows show 0 so end-2025 baseline and earlier history stay clean.
+    let re = 0;
+    if (realEstate && realEstate.purchase_date) {
+      const pd = new Date(realEstate.purchase_date);
+      if (t >= pd) re = realEstate.equity;
+    }
     const groups = {
       QQQ: qq,
       SCHD: sc,
       Crypto: bc + et,
       Cash: tx + bi + lf,
-      "401(k)": vf + tr
+      "401(k)": vf + tr,
+      "Real Estate": re
     };
     return {
       date: t.toISOString().slice(0, 10),
       groups,
-      value: +(qq + sc + tx + bi + lf + bc + et + vf + tr).toFixed(2)
+      value: +(qq + sc + tx + bi + lf + bc + et + vf + tr + re).toFixed(2)
     };
   }).filter(h => h.value > 0).sort((a, b) => a.date.localeCompare(b.date));
 
@@ -700,6 +774,8 @@ function compute(raw) {
     "401(k)": sharesAt(vfTx,   e25, "vfifx")   * (prices.VFIFX  || 0)
             + sharesAt(trTx,   e25, "trrnx")   * (trrnxPrice    || 0)
   };
+  // Real Estate didn't exist at end-2025 → 0 here keeps YTD% honest (Real Estate is excluded from YTD math).
+  if (realEstate) ytd_priced_by_group["Real Estate"] = 0;
   const ytd_priced_total = Object.values(ytd_priced_by_group).reduce((a, b) => a + b, 0);
 
   // ---- S&P 500 series (live from HISTORIC PRICES SP500TR column) ----
@@ -720,7 +796,7 @@ function compute(raw) {
   function addContrib(date, group, amount) {
     if (!date || !amount || amount <= 0) return;
     const m = isoMonth(date);
-    if (!contribMap[m]) contribMap[m] = { month: m, QQQ: 0, SCHD: 0, Crypto: 0, Cash: 0, "401(k)": 0 };
+    if (!contribMap[m]) contribMap[m] = { month: m, QQQ: 0, SCHD: 0, Crypto: 0, Cash: 0, "401(k)": 0, "Real Estate": 0 };
     contribMap[m][group] += amount;
   }
   function buyTotal(r) {
@@ -758,13 +834,18 @@ function compute(raw) {
     const t = String(r["Activity Type"] || "").trim();
     if (/Contribution/i.test(t) && !/Fee/i.test(t)) addContrib(toDate(r.Date, "mdy"), "401(k)", toNum(r.Amount));
   });
+  // Real Estate: one-time cash deployment (DP + Closing + Remodel) on Purchase Date.
+  if (realEstate && realEstate.purchase_date && realEstate.cash_invested > 0) {
+    addContrib(new Date(realEstate.purchase_date), "Real Estate", realEstate.cash_invested);
+  }
   const contributions_monthly = Object.values(contribMap).sort((a, b) => a.month.localeCompare(b.month)).map(m => ({
     month: m.month,
     QQQ: +m.QQQ.toFixed(2),
     SCHD: +m.SCHD.toFixed(2),
     Crypto: +m.Crypto.toFixed(2),
     Cash: +m.Cash.toFixed(2),
-    "401(k)": +m["401(k)"].toFixed(2)
+    "401(k)": +m["401(k)"].toFixed(2),
+    "Real Estate": +m["Real Estate"].toFixed(2)
   }));
 
   // ---- FUTURE assumptions (forecast 2026-2029) ----
@@ -930,13 +1011,15 @@ function compute(raw) {
     fx: { usd_brl_rate: usdBrl },
     forecast,
     future,
+    real_estate: realEstate,
     data_quality_notes: [
       "Dashboard fetches raw sheet data from your Apps Script on every load, with localStorage cache for instant repaint.",
       prices.BTC && prices.ETH && prices.BTC > 1000 && prices.ETH < 1000 ? null : "BTC/ETH prices auto-corrected — they appear swapped in your Real Time Price tab.",
       "TRRNX uses trust-class price ($" + trrnxPrice.toFixed(2) + ") from your latest 401k Bruna transaction, not the public mutual fund price.",
       "S&P 500 benchmark uses the SP500TR total-return series from your Historic Prices tab.",
       "YTD figures are price-only returns — same shares you held on 2025-12-31 marked to today's prices, so per-asset YTD compares apples-to-apples with the S&P 500 sentinel. New 2026 contributions don't inflate the percentage.",
-      "LFTB11 is now tracked in USD throughout (price + cost basis from your sheet)."
+      "LFTB11 is now tracked in USD throughout (price + cost basis from your sheet).",
+      realEstate ? "Real Estate equity = Zestimate − (Original Loan − Principal Paid). Closing costs and remodeling are part of cash invested but don't translate to equity until appreciation or principal paydown makes them whole — so the position can sit below cash invested early on. Excluded from YTD% (no end-2025 baseline) and the Forecast card (no FUTURE assumptions yet)." : null
     ].filter(Boolean)
   };
 }
@@ -1000,7 +1083,8 @@ const GROUPS = {
   SCHD: { color: "#4D9C8C", soft: "#DCEFEB", title: "Dividends", subtitle: "SCHD — Schwab US Dividend" },
   Crypto: { color: "#C49960", soft: "#F5E8D2", title: "Crypto", subtitle: "BTC + ETH" },
   Cash: { color: "#7E8FA0", soft: "#E0E6EC", title: "Cash & Equivalents", subtitle: "TAXM + LFTB11 (USD)" },
-  "401(k)": { color: "#A87BAB", soft: "#ECE0EE", title: "401(k) Combined", subtitle: "Fernando + Wife" }
+  "401(k)": { color: "#A87BAB", soft: "#ECE0EE", title: "401(k) Combined", subtitle: "Fernando + Wife" },
+  "Real Estate": { color: "#8B6B4F", soft: "#EDE2D2", title: "Real Estate", subtitle: "Investment Property" }
 };
 
 // ============================================================
@@ -1045,7 +1129,13 @@ function render(D) {
     Cash:    { value: D.allocation.Cash,    cost: D.positions.TAXM.cost + D.positions.LFTB11.cost },
     "401(k)":{ value: D.allocation["401(k)"], cost: D.positions.VFIFX.cost + D.positions.TRRNX.cost }
   };
-  ["QQQ","SCHD","Crypto","Cash","401(k)"].forEach(k => {
+  if (D.real_estate) {
+    groupVals["Real Estate"] = { value: D.real_estate.equity, cost: D.real_estate.cash_invested };
+  }
+  const QUICK_ORDER = D.real_estate
+    ? ["QQQ","SCHD","Crypto","Cash","401(k)","Real Estate"]
+    : ["QQQ","SCHD","Crypto","Cash","401(k)"];
+  QUICK_ORDER.forEach(k => {
     const g = GROUPS[k]; const gv = groupVals[k];
     const allTimePl = gv.value - gv.cost;
     const allTimePct = gv.cost > 0 ? (allTimePl / gv.cost) * 100 : 0;
@@ -1228,9 +1318,62 @@ function render(D) {
     groupsEl.innerHTML += groupCard("401(k)", { value: `$${s.int}<span class="cents">.${s.dec}</span>`, pl, plPct, cost, totalValue: total, posCount: 2, extraStat: statBlock("Contributions", "$" + fmt(contrib, 0), "Total deposited") }, holdingItem("VFIFX", v, { subline: `Fernando · ${fmt(v.qty, 0)} sh` }) + holdingItem("TRRNX", w, { subline: `Wife · ${fmt(w.qty, 0)} sh` }));
   }
 
+  // Real Estate (custom card — no shares/holdings, leveraged + illiquid)
+  if (D.real_estate) {
+    const re = D.real_estate;
+    const g = GROUPS["Real Estate"];
+    const eq = split(re.equity);
+    const eqHtml = `$${eq.int}<span class="cents">.${eq.dec}</span>`;
+    const gainCls = re.gain_vs_cash >= 0 ? "up" : "down";
+    const apprCls = re.appreciation >= 0 ? "up" : "down";
+    const apprColor = re.appreciation >= 0 ? "var(--up)" : "var(--down)";
+    const purchaseLabel = re.purchase_date
+      ? new Date(re.purchase_date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+      : "—";
+    groupsEl.innerHTML += `<div class="group" style="--group-color:${g.color};--group-soft:${g.soft}">
+      <div class="group-head">
+        <div><div class="group-tag">${g.title}</div><div class="group-subtitle">${g.subtitle}</div></div>
+        <div>
+          <div class="group-value">${eqHtml}</div>
+          <div class="group-pct-row"><span class="pill ${re.gain_vs_cash >= 0 ? 'pill-up' : 'pill-down'}">${sgn(re.gain_pct_vs_cash)}${fmt(Math.abs(re.gain_pct_vs_cash), 1)}%</span></div>
+        </div>
+      </div>
+      <div class="group-stats">
+        ${statBlock("Cash Invested", "$" + fmt(re.cash_invested, 0), "DP · closing · remodel")}
+        ${statBlock("Unrealized", `${sgn(re.gain_vs_cash)}$${fmt(Math.abs(re.gain_vs_cash), 0)}`, "vs cash invested", gainCls)}
+        ${statBlock("% of Portfolio", pctOf(re.equity))}
+        ${statBlock("Appreciation", `${sgn(re.appreciation_pct)}${fmt(Math.abs(re.appreciation_pct), 1)}%`, `${sgn(re.appreciation)}$${fmt(Math.abs(re.appreciation), 0)} vs purchase`, apprCls)}
+      </div>
+      <div class="holdings">
+        <div class="hcard">
+          <div class="hcard-left"><span class="hcard-ticker">Down Payment</span><span class="hcard-name">Equity contribution</span></div>
+          <div class="hcard-right"><span class="hcard-val">$${fmt(re.down_payment, 0)}</span></div>
+        </div>
+        <div class="hcard">
+          <div class="hcard-left"><span class="hcard-ticker">Closing Cost</span><span class="hcard-name">Recoupable via appreciation</span></div>
+          <div class="hcard-right"><span class="hcard-val">$${fmt(re.closing_cost, 0)}</span></div>
+        </div>
+        <div class="hcard">
+          <div class="hcard-left"><span class="hcard-ticker">Remodeling</span><span class="hcard-name">Adds to property value</span></div>
+          <div class="hcard-right"><span class="hcard-val">$${fmt(re.remodeling_cost, 0)}</span></div>
+        </div>
+        <div class="hcard">
+          <div class="hcard-left"><span class="hcard-ticker">Mortgage</span><span class="hcard-name">${fmt(re.interest_rate, 3)}% · $${fmt(re.principal_paid, 0)} paid down</span></div>
+          <div class="hcard-right"><span class="hcard-val">$${fmt(re.mortgage_balance, 0)}</span><span class="hcard-pct" style="color:var(--text-3)">remaining</span></div>
+        </div>
+        <div class="hcard">
+          <div class="hcard-left"><span class="hcard-ticker">Zestimate</span><span class="hcard-name">Bought $${fmt(re.purchase_price, 0)} · ${purchaseLabel}</span></div>
+          <div class="hcard-right"><span class="hcard-val">$${fmt(re.zestimate, 0)}</span><span class="hcard-pct" style="color:${apprColor}">${sgn(re.appreciation_pct)}${fmt(Math.abs(re.appreciation_pct), 1)}%</span></div>
+        </div>
+      </div>
+    </div>`;
+  }
+
   // Money Added to Portfolio (stacked bar by group, with same timeframe selectors as Portfolio Value)
   const contribCtx = $("contribChart").getContext("2d");
-  const CONTRIB_GROUPS = ["QQQ", "SCHD", "Crypto", "Cash", "401(k)"];
+  const CONTRIB_GROUPS = D.real_estate
+    ? ["QQQ", "SCHD", "Crypto", "Cash", "401(k)", "Real Estate"]
+    : ["QQQ", "SCHD", "Crypto", "Cash", "401(k)"];
   function contribTfSlice(tf) {
     const all = D.contributions_monthly || [];
     if (!all.length) return all;
@@ -1246,7 +1389,7 @@ function render(D) {
       const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
       const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
       const found = all.find(m => m.month === key);
-      months.push(found || { month: key, QQQ: 0, SCHD: 0, Crypto: 0, Cash: 0, "401(k)": 0 });
+      months.push(found || { month: key, QQQ: 0, SCHD: 0, Crypto: 0, Cash: 0, "401(k)": 0, "Real Estate": 0 });
     }
     return months;
   }
@@ -1374,7 +1517,10 @@ function render(D) {
     $("forecastCard").style.display = "";
     const labels = fc.years.map(y => String(y));
     const values = fc.values;
-    const todayVal = D.total_value;
+    // Forecast excludes Real Estate (no FUTURE assumptions yet) — keep "Today" baseline liquid-only
+    // so the Today → End 2029 delta is apples-to-apples with the bars.
+    const reEq = (D.real_estate && D.real_estate.equity) || 0;
+    const todayVal = D.total_value - reEq;
     const endVal = values[values.length - 1];
     const delta = endVal - todayVal;
     const deltaPct = todayVal ? (delta / todayVal) * 100 : 0;
@@ -1382,7 +1528,7 @@ function render(D) {
     const tvSplit = fmt(todayVal, 0);
     const evSplit = fmt(endVal, 0);
     $("fc-today").textContent = "$" + tvSplit;
-    $("fc-today-sub").textContent = "Current value (baseline)";
+    $("fc-today-sub").textContent = reEq > 0 ? "Liquid portfolio (excl. Real Estate)" : "Current value (baseline)";
     $("fc-end").textContent = "$" + evSplit;
     $("fc-delta-sub").innerHTML = `<span style="color:${delta >= 0 ? 'var(--up)' : 'var(--down)'};font-weight:700">${sgn(delta)}$${fmt(Math.abs(delta), 0)} (${sgn(deltaPct)}${fmt(Math.abs(deltaPct), 0)}%)</span>`;
     if (typeof fc.months_left_2026 === "number" && fc.months_left_2026 < 12 && fc.months_left_2026 > 0) {
