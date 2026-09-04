@@ -111,9 +111,6 @@ body{background:var(--bg);color:var(--text);font-family:"Plus Jakarta Sans",-app
 .cl-line{width:14px;height:2px;border-radius:1px}
 .cl-value{font-family:"Inter",sans-serif;font-weight:700;color:var(--text)}
 .chart-canvas{height:200px;position:relative}
-.bench-summary{margin-top:14px;padding:12px 14px;background:var(--card-soft);border-radius:12px;display:flex;justify-content:space-between;align-items:center;font-size:12px}
-.bench-summary .lbl{color:var(--text-2);font-weight:600}
-.bench-summary .val{font-family:"Inter",sans-serif;font-weight:700}
 .group{background:var(--card);border-radius:20px;padding:20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(42,32,26,.08),0 8px 24px rgba(42,32,26,.04);position:relative;overflow:hidden}
 .group::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--group-color)}
 .group-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
@@ -138,26 +135,6 @@ body{background:var(--bg);color:var(--text);font-family:"Plus Jakarta Sans",-app
 .hcard-right{text-align:right;display:flex;flex-direction:column;gap:2px;flex-shrink:0}
 .hcard-val{font-family:"Inter",sans-serif;font-size:14px;font-weight:700;color:var(--text)}
 .hcard-pct{font-family:"Inter",sans-serif;font-size:11px;font-weight:700}
-.div-yield-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-.div-yield-card{padding:14px;background:var(--card-soft);border-radius:14px}
-.div-yield-card.featured{background:var(--coral-soft)}
-.dy-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:6px}
-.featured .dy-label{color:var(--coral)}
-.dy-value{font-family:"Inter",sans-serif;font-size:22px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
-.dy-value.coral{color:var(--coral)}
-.dy-sub{font-size:11px;color:var(--text-2);font-weight:500;margin-top:2px}
-.div-bar-chart{height:140px;margin:8px 0 16px}
-.div-list{display:flex;flex-direction:column;gap:6px}
-.div-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--card-soft);border-radius:10px;font-size:12px}
-.div-row-l{display:flex;align-items:center;gap:10px}
-.div-tk{font-family:"Inter",sans-serif;font-weight:800;font-size:12px;background:var(--card);padding:4px 8px;border-radius:6px;color:var(--text)}
-.div-date{color:var(--text-2);font-weight:500}
-.div-amt{font-family:"Inter",sans-serif;font-weight:700;color:var(--text)}
-.notes{background:rgba(255,255,255,.95);border-radius:16px;padding:16px 18px;margin-top:16px;margin-bottom:16px;border-left:3px solid var(--coral)}
-.notes-title{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--coral);margin-bottom:10px}
-.notes ul{list-style:none}
-.notes li{font-size:12px;color:var(--text-2);line-height:1.55;padding:6px 0;padding-left:14px;position:relative;font-weight:500}
-.notes li::before{content:"·";position:absolute;left:0;font-weight:800;color:var(--coral)}
 footer{text-align:center;font-size:11px;color:rgba(255,255,255,.6);font-weight:500;margin-top:24px;letter-spacing:.05em}
 .hidden{display:none!important}
 </style>
@@ -241,50 +218,6 @@ footer{text-align:center;font-size:11px;color:rgba(255,255,255,.6);font-weight:5
     </div>
 
     <div id="groups"></div>
-
-    <div class="card">
-      <div class="card-head"><span class="card-title">Money Added to Portfolio</span></div>
-      <div class="chart-legend" id="contribLegend"></div>
-      <div class="chart-canvas"><canvas id="contribChart"></canvas></div>
-      <div class="tf-row" style="margin-top:14px" id="contribTimeframe">
-        <button class="tf-btn" data-tf="6M">6M</button>
-        <button class="tf-btn active" data-tf="YTD">YTD</button>
-        <button class="tf-btn" data-tf="1Y">1Y</button>
-        <button class="tf-btn" data-tf="2Y">2Y</button>
-        <button class="tf-btn" data-tf="ALL">ALL</button>
-      </div>
-      <div class="bench-summary"><span class="lbl">Total Added · <span id="contribRange">YTD</span></span><span class="val" id="contribTotal">$0</span></div>
-    </div>
-
-    <div class="card">
-      <div class="card-head"><span class="card-title">Dividend Income</span></div>
-      <div class="div-yield-row">
-        <div class="div-yield-card featured"><div class="dy-label">2026 YTD</div><div class="dy-value coral" id="dy2026"></div><div class="dy-sub" id="dy2026Sub"></div></div>
-        <div class="div-yield-card"><div class="dy-label">2025 YTD <span style="opacity:.6;font-weight:600;letter-spacing:0;text-transform:none">same period</span></div><div class="dy-value" id="dy2025YTD"></div><div class="dy-sub" id="dy2025YTDSub"></div></div>
-        <div class="div-yield-card"><div class="dy-label">Trailing Yield</div><div class="dy-value" id="dyYield"></div><div class="dy-sub" id="dyYieldSub"></div></div>
-        <div class="div-yield-card"><div class="dy-label">Avg Monthly</div><div class="dy-value" id="dyMonthly"></div><div class="dy-sub" id="dyMonthlySub"></div></div>
-      </div>
-      <div class="bench-summary" id="divYtdCompare" style="margin-top:0;margin-bottom:14px"></div>
-      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:8px">Monthly Income</div>
-      <div class="div-bar-chart"><canvas id="divChart"></canvas></div>
-      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin:6px 0 10px">Recent Payments</div>
-      <div class="div-list" id="divList"></div>
-    </div>
-
-    <div class="card" id="forecastCard">
-      <div class="card-head"><span class="card-title">Forecast 2026 – 2029</span><span class="card-action" id="forecastNote">Reinvested · DCA</span></div>
-      <div class="div-yield-row" style="grid-template-columns:1fr 1fr">
-        <div class="div-yield-card"><div class="dy-label">Today</div><div class="dy-value" id="fc-today">$0</div><div class="dy-sub" id="fc-today-sub"></div></div>
-        <div class="div-yield-card featured" style="background:var(--teal-soft, #DCEFEB)"><div class="dy-label" style="color:var(--teal)">End 2029 (est.)</div><div class="dy-value" id="fc-end" style="color:var(--teal)">$0</div><div class="dy-sub" id="fc-delta-sub"></div></div>
-      </div>
-      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin:6px 0 8px">Year-End Total</div>
-      <div class="chart-canvas"><canvas id="forecastChart"></canvas></div>
-    </div>
-
-    <div class="notes">
-      <div class="notes-title">Data Quality Notes</div>
-      <ul id="notes"></ul>
-    </div>
 
     <footer>Source · INVESTIMENTS API · As of <span id="asof"></span></footer>
   </div>
@@ -458,17 +391,65 @@ function compute(raw) {
       trLatestPrice = p; trLatestDate = d;
     }
   });
-  // Override TRRNX price with trust class (latest from transactions)
-  const trrnxPrice = trLatestPrice || prices.TRRNX || 0;
+  // TRRNX current price. The sheet's REAL TIME PRICE now tracks the same (trust) share class
+  // as the plan transactions, so prefer the live quote and only fall back to the latest
+  // transaction price when the live one is missing or wildly off (old public-fund mismatch).
+  let trrnxPrice = prices.TRRNX || trLatestPrice || 0;
+  if (trLatestPrice > 0 && (!trrnxPrice || Math.abs(trrnxPrice - trLatestPrice) / trLatestPrice > 0.25)) {
+    trrnxPrice = trLatestPrice;
+  }
 
   // ---- LFTB11 (USD-priced; sheet now tracks LFTB11 in USD end-to-end) ----
   const lftbPrice = prices.LFTB11 || 0;
 
   // ---- REAL ESTATE (single property, illiquid, leveraged) ----
-  // Value = Zestimate − Mortgage Balance (Original Loan − Principal Paid) → Fernando's equity in the house.
-  // Cost basis = Down Payment + Closing Cost + Remodeling (cash actually deployed).
-  // Closing + Remodeling don't translate to equity at t=0, so equity may sit BELOW cash invested
-  // until Zestimate appreciates or principal is paid down — this is the honest accounting.
+  // Sheet columns (as of 2026-09): zpid | Purchase Date | Purchase Price | Closing Cost |
+  //   Down Payment | Remodeling Cost | Original Loan | Interest Rate | Current Market Price | Loan Term
+  // Value = Current Market Price − mortgage balance → Fernando's equity in the house.
+  // The sheet no longer carries "Mortgage Principal Paid", so the balance is amortized from
+  // Original Loan / Interest Rate / Loan Term (standard fixed-rate schedule, first payment on
+  // the 1st of the second month after closing).
+  // Cash invested = Down Payment + Closing Cost + Remodeling (cash actually deployed).
+  // All-in cost = Purchase Price + Closing + Remodeling (what the house has to be worth to break even).
+
+  // Fixed-rate amortization: returns payment, balance and principal/interest paid to date.
+  function amortize(loan, annualRatePct, termMonths, paymentsMade) {
+    const r = (annualRatePct / 100) / 12;
+    const n = termMonths;
+    if (!(loan > 0) || !(n > 0)) return { payment: 0, balance: Math.max(0, loan), principal_paid: 0, interest_paid: 0, payments_made: 0 };
+    const k = paymentsMade > 0 ? Math.min(paymentsMade, n) : 0;
+    if (r === 0) {
+      const pay = loan / n;
+      return { payment: pay, balance: Math.max(0, loan - pay * k), principal_paid: pay * k, interest_paid: 0, payments_made: k };
+    }
+    const pow = Math.pow(1 + r, n);
+    const payment = loan * r * pow / (pow - 1);
+    // Standard closed form: B_k = L(1+r)^k − P[((1+r)^k − 1)/r]
+    const powK = Math.pow(1 + r, k);
+    const balance = Math.max(0, loan * powK - payment * ((powK - 1) / r));
+    const principalPaid = loan - balance;
+    const interestPaid = payment * k - principalPaid;
+    return { payment, balance, principal_paid: principalPaid, interest_paid: Math.max(0, interestPaid), payments_made: k };
+  }
+  // "30 Years" / "30" / "360 months" / 30 → months
+  function parseTermMonths(v) {
+    if (v === null || v === undefined || v === "") return 360;
+    if (typeof v === "number") return v > 60 ? Math.round(v) : Math.round(v * 12);
+    const s = String(v).toLowerCase();
+    const n = parseFloat(s.replace(/[^\d.]/g, ""));
+    if (!n || isNaN(n)) return 360;
+    if (/month|mo\b/.test(s)) return Math.round(n);
+    if (/year|yr|ano/.test(s)) return Math.round(n * 12);
+    return n > 60 ? Math.round(n) : Math.round(n * 12);
+  }
+  // Payments elapsed between closing and a given date (first payment = 1st of the 2nd month after closing).
+  function paymentsElapsed(purchaseDate, asOf) {
+    if (!purchaseDate || !asOf) return 0;
+    const first = new Date(purchaseDate.getFullYear(), purchaseDate.getMonth() + 2, 1);
+    if (asOf < first) return 0;
+    return (asOf.getFullYear() - first.getFullYear()) * 12 + (asOf.getMonth() - first.getMonth()) + 1;
+  }
+
   const reRows = findSheetAny(raw, "REAL_ESTATE", "REAL ESTATE", "REAL_STATE", "REAL STATE");
   let realEstate = null;
   if (reRows.length) {
@@ -478,21 +459,26 @@ function compute(raw) {
     const closingCost      = toNum(getCol(r, "Closing Cost"));
     const remodelingCost   = toNum(getCol(r, "Remodeling Cost"));
     const originalLoan     = toNum(getCol(r, "Original Loan"));
-    const principalPaid    = toNum(getCol(r, "Mortgage Principal Paid"));
     const interestRate     = toNum(getCol(r, "Interest Rate"));
-    const zestimate        = toNum(getCol(r, "Zestimate Real Time"));
-    const zestimateAtPurch = toNum(getCol(r, "Zestimate Day of the Purchase"));
-    // Brazilian dd/mm/yyyy convention (matches the rest of the sheet)
+    const termMonths       = parseTermMonths(getCol(r, "Loan Term"));
+    // "Current Market Price" replaced the old Zestimate columns; keep the fallbacks for safety.
+    const marketValue      = toNum(getCol(r, "Current Market Price")) || toNum(getCol(r, "Zestimate Real Time"));
     const purchaseDate     = toDate(getCol(r, "Purchase Date"), "dmy");
     const zpid             = String(getCol(r, "zpid") || "");
 
+    const nowD  = new Date();
+    const amort = amortize(originalLoan, interestRate, termMonths, paymentsElapsed(purchaseDate, nowD));
+
     const cashInvested    = downPayment + closingCost + remodelingCost;
-    const mortgageBalance = Math.max(0, originalLoan - principalPaid);
-    const equity          = zestimate - mortgageBalance;
+    const allInCost       = purchasePrice + closingCost + remodelingCost;
+    const mortgageBalance = amort.balance;
+    const equity          = marketValue - mortgageBalance;
     const gainVsCash      = equity - cashInvested;
     const gainPctVsCash   = cashInvested > 0 ? (gainVsCash / cashInvested) * 100 : 0;
-    const appreciation    = zestimate - purchasePrice;
+    const appreciation    = marketValue - purchasePrice;
     const appreciationPct = purchasePrice > 0 ? (appreciation / purchasePrice) * 100 : 0;
+    const vsAllIn         = marketValue - allInCost;
+    const ltv             = marketValue > 0 ? (mortgageBalance / marketValue) * 100 : 0;
 
     realEstate = {
       zpid,
@@ -503,16 +489,33 @@ function compute(raw) {
       remodeling_cost: +remodelingCost.toFixed(2),
       original_loan: +originalLoan.toFixed(2),
       interest_rate: interestRate,
-      principal_paid: +principalPaid.toFixed(2),
-      zestimate: +zestimate.toFixed(2),
-      zestimate_at_purchase: +zestimateAtPurch.toFixed(2),
+      term_months: termMonths,
+      term_label: termMonths % 12 === 0 ? (termMonths / 12) + "-yr" : termMonths + "mo",
+      monthly_payment: +amort.payment.toFixed(2),
+      payments_made: amort.payments_made,
+      principal_paid: +amort.principal_paid.toFixed(2),
+      interest_paid: +amort.interest_paid.toFixed(2),
+      market_value: +marketValue.toFixed(2),
       cash_invested: +cashInvested.toFixed(2),
+      all_in_cost: +allInCost.toFixed(2),
+      vs_all_in: +vsAllIn.toFixed(2),
+      ltv_pct: +ltv.toFixed(1),
       mortgage_balance: +mortgageBalance.toFixed(2),
       equity: +equity.toFixed(2),
       gain_vs_cash: +gainVsCash.toFixed(2),
       gain_pct_vs_cash: +gainPctVsCash.toFixed(2),
       appreciation: +appreciation.toFixed(2),
       appreciation_pct: +appreciationPct.toFixed(2)
+    };
+    // Equity as of an arbitrary past date: market value interpolated purchase → today,
+    // mortgage balance from the real amortization schedule. Used by the history chart.
+    realEstate._equityAt = function (d) {
+      if (!purchaseDate || !d || d < purchaseDate) return 0;
+      const span = nowD - purchaseDate;
+      const t = span > 0 ? Math.min(1, Math.max(0, (d - purchaseDate) / span)) : 1;
+      const mv = purchasePrice + (marketValue - purchasePrice) * t;
+      const bal = amortize(originalLoan, interestRate, termMonths, paymentsElapsed(purchaseDate, d)).balance;
+      return mv - bal;
     };
   }
 
@@ -610,51 +613,16 @@ function compute(raw) {
     total_cost  += realEstate.cash_invested;
   }
 
+  // BTC and ETH are tracked as their own asset classes (split out 2026-09).
   const allocation = {
     QQQ: positions.QQQ.value,
     SCHD: positions.SCHD.value,
-    Crypto: positions.BTC.value + positions.ETH.value,
-    Cash: positions.TAXM.value + positions.LFTB11.value + positions.BIL?.value || (positions.TAXM.value + positions.LFTB11.value),
+    BTC: positions.BTC.value,
+    ETH: positions.ETH.value,
+    Cash: positions.TAXM.value + positions.LFTB11.value,
     "401(k)": positions.VFIFX.value + positions.TRRNX.value,
   };
   if (realEstate) allocation["Real Estate"] = realEstate.equity;
-
-  // ---- DIVIDENDS ----
-  const divRows = findSheet(raw, "DIVIDENDS").filter(r => {
-    const a = String(r.Action || "").trim();
-    return /Dividend/i.test(a);
-  }).map(r => ({
-    date: toDate(r.Date, "mdy"),
-    ticker: r.Symbol || r.symbol || "",
-    amount: toNum(r.Amount)
-  })).filter(r => r.date && r.amount).sort((a, b) => b.date - a.date);
-
-  // Monthly aggregation for last 16 months
-  const monthlyMap = {};
-  divRows.forEach(r => {
-    const m = isoMonth(r.date);
-    monthlyMap[m] = (monthlyMap[m] || 0) + r.amount;
-  });
-  // Build last 16 months ending current month
-  const today = new Date();
-  const dividends_monthly = [];
-  for (let i = 15; i >= 0; i--) {
-    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-    const m = isoMonth(d);
-    dividends_monthly.push({ month: m, amount: monthlyMap[m] || 0 });
-  }
-  const div_2025_total = divRows.filter(r => r.date.getFullYear() === 2025).reduce((s, r) => s + r.amount, 0);
-  const div_2026_ytd = divRows.filter(r => r.date.getFullYear() === 2026).reduce((s, r) => s + r.amount, 0);
-  // 2025 YTD same period (Jan 1 → today's month/day) for apples-to-apples comparison
-  const todayKey = today.getMonth() * 100 + today.getDate();
-  const div_2025_ytd_same = divRows
-    .filter(r => r.date.getFullYear() === 2025 && (r.date.getMonth() * 100 + r.date.getDate()) <= todayKey)
-    .reduce((s, r) => s + r.amount, 0);
-  const div_recent = divRows.slice(0, 8).map(r => ({
-    date: r.date.toISOString().slice(0, 10),
-    ticker: r.ticker,
-    amount: +r.amount.toFixed(2)
-  }));
 
   // ---- HISTORICAL PORTFOLIO VALUE ----
   // Walk HISTORIC PRICES tab; for each month with data, compute shares-held + value.
@@ -716,6 +684,17 @@ function compute(raw) {
     return q;
   }
 
+  // TRRNX share-class guard. The HISTORIC PRICES column now tracks the same trust class as the
+  // plan transactions, so no scaling is needed. Only if the historic series is clearly a different
+  // (cheaper public-fund) share class do we rescale it — detected off the latest historic close.
+  const lastHistTrrnx = (() => {
+    for (let i = histRows.length - 1; i >= 0; i--) if (histRows[i].trrnx > 0) return histRows[i].trrnx;
+    return 0;
+  })();
+  const trrnxScale = (trrnxPrice && lastHistTrrnx && (trrnxPrice / lastHistTrrnx) > 1.6)
+    ? trrnxPrice / lastHistTrrnx
+    : 1;
+
   // Per-month per-group values (used for total + Quick Overview YTD)
   const historyDetailed = histRows.map(h => {
     const t = h.date;
@@ -727,21 +706,15 @@ function compute(raw) {
     const bc = sharesAt(btcTx, t, "crypto") * h.btc;
     const et = sharesAt(ethTx, t, "crypto") * h.eth;
     const vf = sharesAt(vfTx, t, "vfifx") * h.vfifx;
-    // TRRNX historic in HISTORIC PRICES is public mutual fund (~$24);
-    // user holds trust class (~$53). Scale up by ratio.
-    const trrnxScale = trrnxPrice && h.trrnx ? trrnxPrice / h.trrnx : 2.182;
     const tr = sharesAt(trTx, t, "trrnx") * h.trrnx * trrnxScale;
-    // Real Estate equity (constant from purchase date forward — only one Zestimate cell today).
-    // Pre-purchase rows show 0 so end-2025 baseline and earlier history stay clean.
-    let re = 0;
-    if (realEstate && realEstate.purchase_date) {
-      const pd = new Date(realEstate.purchase_date);
-      if (t >= pd) re = realEstate.equity;
-    }
+    // Real Estate equity: market value interpolated purchase → today, mortgage from the
+    // amortization schedule. 0 before closing so end-2025 baseline and earlier history stay clean.
+    const re = (realEstate && realEstate._equityAt) ? realEstate._equityAt(t) : 0;
     const groups = {
       QQQ: qq,
       SCHD: sc,
-      Crypto: bc + et,
+      BTC: bc,
+      ETH: et,
       Cash: tx + bi + lf,
       "401(k)": vf + tr,
       "Real Estate": re
@@ -753,7 +726,28 @@ function compute(raw) {
     };
   }).filter(h => h.value > 0).sort((a, b) => a.date.localeCompare(b.date));
 
-  const history = historyDetailed.map(h => ({ date: h.date, value: h.value }));
+  // The HISTORIC PRICES tab only carries month-end closes, and the current month's row is empty
+  // until it closes — so the series would otherwise stop weeks in the past while the hero card
+  // shows today's live number. Append a live "today" point (live prices, current holdings) so the
+  // chart actually ends at the value shown at the top of the dashboard.
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const liveGroups = {
+    QQQ: positions.QQQ.value,
+    SCHD: positions.SCHD.value,
+    BTC: positions.BTC.value,
+    ETH: positions.ETH.value,
+    Cash: positions.TAXM.value + positions.LFTB11.value,
+    "401(k)": positions.VFIFX.value + positions.TRRNX.value,
+    "Real Estate": realEstate ? realEstate.equity : 0
+  };
+  const liveTotal = +Object.values(liveGroups).reduce((a, b) => a + b, 0).toFixed(2);
+  if (historyDetailed.length && historyDetailed[historyDetailed.length - 1].date >= todayISO) {
+    historyDetailed[historyDetailed.length - 1] = { date: todayISO, groups: liveGroups, value: liveTotal, live: true };
+  } else {
+    historyDetailed.push({ date: todayISO, groups: liveGroups, value: liveTotal, live: true });
+  }
+
+  const history = historyDetailed.map(h => ({ date: h.date, value: h.value, live: !!h.live }));
 
   // End of 2025 lookup (total + per-group)
   const end_2025_detailed = historyDetailed.find(h => h.date === "2025-12-31");
@@ -766,8 +760,8 @@ function compute(raw) {
   const ytd_priced_by_group = {
     QQQ:      sharesAt(qqqTx,  e25, "buysell") * (prices.QQQ    || 0),
     SCHD:     sharesAt(schdTx, e25, "buysell") * (prices.SCHD   || 0),
-    Crypto:   sharesAt(btcTx,  e25, "crypto")  * (prices.BTC    || 0)
-            + sharesAt(ethTx,  e25, "crypto")  * (prices.ETH    || 0),
+    BTC:      sharesAt(btcTx,  e25, "crypto")  * (prices.BTC    || 0),
+    ETH:      sharesAt(ethTx,  e25, "crypto")  * (prices.ETH    || 0),
     Cash:     sharesAt(taxmTx, e25, "buysell") * (prices.TAXM   || 0)
             + sharesAt(bilTx,  e25, "buysell") * (prices.BIL    || 0)
             + sharesAt(lftbTx, e25, "buysell") * (prices.LFTB11 || 0),
@@ -785,206 +779,18 @@ function compute(raw) {
   })).sort((a, b) => a.date.localeCompare(b.date));
 
   // ---- S&P 500 YTD % (live SP500TR vs end-2025 close) ----
+  // Sanity guard: the live SP500TR cell has come back on a different scale before (it currently
+  // quotes roughly half the total-return series in HISTORIC PRICES, which would print a −47% year).
+  // If the live quote is more than 25% away from the last monthly close, fall back to that close.
   const sp500_end_2025 = (spx.find(p => p.date === "2025-12-31") || {}).value || 0;
-  const sp500_now = prices.SP500TR || (spx.length ? spx[spx.length - 1].value : 0);
+  const sp500_last_close = spx.length ? spx[spx.length - 1].value : 0;
+  const sp500_last_date = spx.length ? spx[spx.length - 1].date : null;
+  const sp500_live = prices.SP500TR || 0;
+  const sp500_live_ok = sp500_live > 0 && sp500_last_close > 0
+    && Math.abs(sp500_live - sp500_last_close) / sp500_last_close <= 0.25;
+  const sp500_now = sp500_live_ok ? sp500_live : sp500_last_close;
   const sp500_ytd_pct = sp500_end_2025 ? +(((sp500_now - sp500_end_2025) / sp500_end_2025) * 100).toFixed(2) : 0;
-
-  // ---- Money added to portfolio (per month, per group) ----
-  // Real new money in: BUY orders for ETFs, crypto purchases (TOTAL USD), 401k Plan/Contribution rows.
-  // Excludes: dividends, market fluctuation, fees, sells.
-  const contribMap = {};
-  function addContrib(date, group, amount) {
-    if (!date || !amount || amount <= 0) return;
-    const m = isoMonth(date);
-    if (!contribMap[m]) contribMap[m] = { month: m, QQQ: 0, SCHD: 0, Crypto: 0, Cash: 0, "401(k)": 0, "Real Estate": 0 };
-    contribMap[m][group] += amount;
-  }
-  function buyTotal(r) {
-    return toNum(r.Total) || (toNum(r.QTD) * toNum(r.Price));
-  }
-  // Equity ledgers (Brazilian dd/mm/yyyy)
-  findSheet(raw, "QQQ").forEach(r => {
-    if (String(r.Type || "").toUpperCase().trim() === "BUY") addContrib(toDate(r.Date, "dmy"), "QQQ", buyTotal(r));
-  });
-  findSheet(raw, "SCHD").forEach(r => {
-    if (String(r.Type || "").toUpperCase().trim() === "BUY") addContrib(toDate(r.Date, "dmy"), "SCHD", buyTotal(r));
-  });
-  findSheet(raw, "TAXM").forEach(r => {
-    if (String(r.Type || "").toUpperCase().trim() === "BUY") addContrib(toDate(r.Date, "dmy"), "Cash", buyTotal(r));
-  });
-  findSheet(raw, "LFTB11").forEach(r => {
-    if (String(r.Type || "").toUpperCase().trim() === "BUY") addContrib(toDate(r.Date, "dmy"), "Cash", buyTotal(r));
-  });
-  // Crypto (Date USA mdy, sum TOTAL USD)
-  function cryptoContribs(name) {
-    findSheet(raw, name).forEach(r => {
-      const tk = Object.keys(r).find(k => /total\s*usd/i.test(k));
-      const amt = tk ? toNum(r[tk]) : 0;
-      addContrib(toDate(r["Date USA"] || r.Date, "mdy"), "Crypto", amt);
-    });
-  }
-  cryptoContribs("BTC");
-  cryptoContribs("ETH");
-  // 401k Fernando — Plan Contribution Amount
-  vfRows.forEach(r => {
-    if (/Plan Contribution/i.test(String(r.Type || ""))) addContrib(toDate(r.Date, "mdy"), "401(k)", toNum(r.Amount));
-  });
-  // 401k Bruna — Contribution Amount (excludes Misc Receipt, Dividend, Market Fluctuation, Fee)
-  brRows.forEach(r => {
-    const t = String(r["Activity Type"] || "").trim();
-    if (/Contribution/i.test(t) && !/Fee/i.test(t)) addContrib(toDate(r.Date, "mdy"), "401(k)", toNum(r.Amount));
-  });
-  // Real Estate: one-time cash deployment (DP + Closing + Remodel) on Purchase Date.
-  if (realEstate && realEstate.purchase_date && realEstate.cash_invested > 0) {
-    addContrib(new Date(realEstate.purchase_date), "Real Estate", realEstate.cash_invested);
-  }
-  const contributions_monthly = Object.values(contribMap).sort((a, b) => a.month.localeCompare(b.month)).map(m => ({
-    month: m.month,
-    QQQ: +m.QQQ.toFixed(2),
-    SCHD: +m.SCHD.toFixed(2),
-    Crypto: +m.Crypto.toFixed(2),
-    Cash: +m.Cash.toFixed(2),
-    "401(k)": +m["401(k)"].toFixed(2),
-    "Real Estate": +m["Real Estate"].toFixed(2)
-  }));
-
-  // ---- FUTURE assumptions (forecast 2026-2029) ----
-  // Sheet structure: param-name col + 4 year cols (2026, 2027, 2028, 2029).
-  // Header row may be blank, so we detect the year row by scanning values.
-  function normalizeFutureAsset(label) {
-    const s = label.replace(/^(New Money Invested|Dividend Yield|Growth)\s+/i, "").trim();
-    if (/^401K?\s*Fernando/i.test(s)) return "VFIFX";
-    if (/^401K?\s*Bruna/i.test(s)) return "TRRNX";
-    return s.toUpperCase();
-  }
-  function parseFuture(rows) {
-    if (!rows || !rows.length) return null;
-    const out = { newMoney: {}, divYield: {}, growth: {}, usdBrl: {} };
-    // Detect year columns. Two layouts supported:
-    //   (a) headers are blank/positional, year row holds 2026..2029 as values
-    //   (b) headers ARE "2026"/"2027"/"2028"/"2029" (Apps Script used them as keys)
-    let yearOrder = [2026, 2027, 2028, 2029];
-    let valueIdxs = [1, 2, 3, 4];
-    let paramIdx = 0;
-    let useKeys = false; // when true, use keys instead of positional indices
-    let yearKeys = [];
-    let paramKey = null;
-
-    // Try layout (b) first: any row with keys "2026"-"2029"
-    const sampleKeys = Object.keys(rows[0] || {});
-    const yearKeyHits = sampleKeys.filter(k => /^20(2[6-9]|30)$/.test(String(k)));
-    if (yearKeyHits.length >= 4) {
-      useKeys = true;
-      yearKeys = yearKeyHits.slice(0, 4).sort();
-      yearOrder = yearKeys.map(k => +k);
-      // NOTE: param column key is often the empty string "" (Apps Script keeps it
-      // when the sheet's first cell of row 1 is blank). Don't `|| sampleKeys[0]` —
-      // "" is falsy and would fall through to a year key, breaking everything.
-      const foundParam = sampleKeys.find(k => !yearKeyHits.includes(k));
-      paramKey = foundParam !== undefined ? foundParam : sampleKeys[0];
-    } else {
-      // Layout (a): scan for the year-row by values
-      for (const r of rows) {
-        const vals = Object.values(r);
-        const hits = [];
-        vals.forEach((v, i) => {
-          const n = +v;
-          if (Number.isInteger(n) && n >= 2026 && n <= 2030) hits.push({ i, n });
-        });
-        if (hits.length >= 4) {
-          yearOrder = hits.slice(0, 4).map(h => h.n);
-          valueIdxs = hits.slice(0, 4).map(h => h.i);
-          const used = new Set(valueIdxs);
-          const pi = vals.findIndex((v, i) => !used.has(i) && typeof v === "string" && v.length > 0);
-          if (pi >= 0) paramIdx = pi;
-          break;
-        }
-      }
-    }
-    function readNum(v) {
-      if (v == null || v === "") return 0;
-      if (typeof v === "number") return v;
-      if (typeof v === "string") {
-        if (v.includes("%")) return parseFloat(v.replace(/[%\s]/g, "")) / 100;
-        return parseFloat(v.replace(/[$,R\s]/g, "")) || 0;
-      }
-      return 0;
-    }
-    rows.forEach(r => {
-      const param = useKeys
-        ? String(r[paramKey] || "").trim()
-        : String(Object.values(r)[paramIdx] || "").trim();
-      if (!param) return;
-      // Rate rows (yields, growth, FX) are always between 0 and 1 in real life.
-      // If Apps Script returned them as raw integers (e.g. 10 for "10%"), divide by 100.
-      const isRate = /^(Dividend Yield|Growth|USD\/?BRL)/i.test(param);
-      const yearVals = {};
-      yearOrder.forEach((y, yi) => {
-        const v = useKeys ? r[yearKeys[yi]] : Object.values(r)[valueIdxs[yi]];
-        let n = readNum(v);
-        if (isRate && Math.abs(n) > 1) n = n / 100;
-        yearVals[y] = n;
-      });
-      if (/^New Money Invested\s+/i.test(param)) {
-        out.newMoney[normalizeFutureAsset(param)] = yearVals;
-      } else if (/^Dividend Yield\s+/i.test(param)) {
-        out.divYield[normalizeFutureAsset(param)] = yearVals;
-      } else if (/^Growth\s+/i.test(param)) {
-        out.growth[normalizeFutureAsset(param)] = yearVals;
-      } else if (/^USD\s*\/?\s*BRL/i.test(param)) {
-        out.usdBrl = yearVals;
-      }
-    });
-    return out;
-  }
-  const future = parseFuture(findSheet(raw, "FUTURE"));
-
-  // ---- Forecast 2026-2029 (year-end values, dividends reinvested) ----
-  // Baseline: today's actual portfolio value per asset.
-  // 2026: only the months remaining from today through Dec apply.
-  // 2027-2029: full 12 months of growth + new money + reinvested dividends.
-  // Cash flows are spread monthly (DCA). Growth + dividends compound monthly.
-  function computeForecast(positions, fut) {
-    if (!fut) return null;
-    const ASSETS = ["QQQ", "SCHD", "TAXM", "LFTB11", "BTC", "ETH", "VFIFX", "TRRNX"];
-    const today = new Date();
-    const monthsLeft2026 = (today.getFullYear() === 2026)
-      ? 12 - today.getMonth()                     // e.g. May (month 4) -> 8 months left
-      : (today.getFullYear() < 2026 ? 12 : 0);   // pre-2026 = full year, post-2026 = nothing
-    const current = {};
-    ASSETS.forEach(a => { current[a] = (positions[a] && positions[a].value) || 0; });
-    const yearEnds = [];
-    [2026, 2027, 2028, 2029].forEach(year => {
-      const months = (year === 2026) ? monthsLeft2026 : 12;
-      ASSETS.forEach(asset => {
-        const annualMoney  = (fut.newMoney[asset] && fut.newMoney[asset][year]) || 0;
-        const annualGrowth = (fut.growth[asset]   && fut.growth[asset][year])   || 0;
-        const annualDiv    = (fut.divYield[asset] && fut.divYield[asset][year]) || 0;
-        const monthlyMoney  = annualMoney / 12;
-        const monthlyFactor = Math.pow(1 + annualGrowth, 1 / 12)
-                            * Math.pow(1 + annualDiv,    1 / 12);
-        let v = current[asset];
-        for (let m = 0; m < months; m++) {
-          v += monthlyMoney;     // contribute at start of month
-          v *= monthlyFactor;    // then growth + reinvest dividends
-        }
-        current[asset] = v;
-      });
-      const total = ASSETS.reduce((s, a) => s + current[a], 0);
-      yearEnds.push({
-        year,
-        value: +total.toFixed(2),
-        byAsset: Object.fromEntries(ASSETS.map(a => [a, +current[a].toFixed(2)]))
-      });
-    });
-    return {
-      years: yearEnds.map(y => y.year),
-      values: yearEnds.map(y => y.value),
-      detailed: yearEnds,
-      months_left_2026: monthsLeft2026
-    };
-  }
-  const forecast = computeForecast(positions, future);
+  const sp500_as_of = sp500_live_ok ? "live" : sp500_last_date;
 
   // ---- Final schema ----
   return {
@@ -1002,25 +808,9 @@ function compute(raw) {
     history,
     spx,
     sp500_ytd_pct,
-    contributions_monthly,
-    dividends_monthly,
-    div_recent,
-    div_2025_total: +div_2025_total.toFixed(2),
-    div_2025_ytd_same: +div_2025_ytd_same.toFixed(2),
-    div_2026_ytd: +div_2026_ytd.toFixed(2),
+    sp500_as_of,
     fx: { usd_brl_rate: usdBrl },
-    forecast,
-    future,
-    real_estate: realEstate,
-    data_quality_notes: [
-      "Dashboard fetches raw sheet data from your Apps Script on every load, with localStorage cache for instant repaint.",
-      prices.BTC && prices.ETH && prices.BTC > 1000 && prices.ETH < 1000 ? null : "BTC/ETH prices auto-corrected — they appear swapped in your Real Time Price tab.",
-      "TRRNX uses trust-class price ($" + trrnxPrice.toFixed(2) + ") from your latest 401k Bruna transaction, not the public mutual fund price.",
-      "S&P 500 benchmark uses the SP500TR total-return series from your Historic Prices tab.",
-      "YTD figures are price-only returns — same shares you held on 2025-12-31 marked to today's prices, so per-asset YTD compares apples-to-apples with the S&P 500 sentinel. New 2026 contributions don't inflate the percentage.",
-      "LFTB11 is now tracked in USD throughout (price + cost basis from your sheet).",
-      realEstate ? "Real Estate equity = Zestimate − (Original Loan − Principal Paid). Closing costs and remodeling are part of cash invested but don't translate to equity until appreciation or principal paydown makes them whole — so the position can sit below cash invested early on. Excluded from YTD% (no end-2025 baseline) and the Forecast card (no FUTURE assumptions yet)." : null
-    ].filter(Boolean)
+    real_estate: realEstate
   };
 }
 
@@ -1079,18 +869,19 @@ const cls = n => n >= 0 ? "up" : "down";
 const arrow = n => n >= 0 ? "↑" : "↓";
 
 const GROUPS = {
-  QQQ: { color: "#E07856", soft: "#FBE4DA", title: "Growth", subtitle: "QQQ — NASDAQ 100" },
-  SCHD: { color: "#4D9C8C", soft: "#DCEFEB", title: "Dividends", subtitle: "SCHD — Schwab US Dividend" },
-  Crypto: { color: "#C49960", soft: "#F5E8D2", title: "Crypto", subtitle: "BTC + ETH" },
-  Cash: { color: "#7E8FA0", soft: "#E0E6EC", title: "Cash & Equivalents", subtitle: "TAXM + LFTB11 (USD)" },
-  "401(k)": { color: "#A87BAB", soft: "#ECE0EE", title: "401(k) Combined", subtitle: "Fernando + Wife" },
-  "Real Estate": { color: "#8B6B4F", soft: "#EDE2D2", title: "Real Estate", subtitle: "Investment Property" }
+  QQQ: { color: "#E07856", soft: "#FBE4DA", title: "Growth", short: "Growth", subtitle: "QQQ — NASDAQ 100" },
+  SCHD: { color: "#4D9C8C", soft: "#DCEFEB", title: "Dividends", short: "Dividends", subtitle: "SCHD — Schwab US Dividend" },
+  BTC: { color: "#C49960", soft: "#F5E8D2", title: "Bitcoin", short: "Bitcoin", subtitle: "BTC" },
+  ETH: { color: "#6C7BC4", soft: "#E2E5F4", title: "Ethereum", short: "Ethereum", subtitle: "ETH" },
+  Cash: { color: "#7E8FA0", soft: "#E0E6EC", title: "Cash & Equivalents", short: "Cash", subtitle: "TAXM + LFTB11 (USD)" },
+  "401(k)": { color: "#A87BAB", soft: "#ECE0EE", title: "401(k) Combined", short: "401(k)", subtitle: "Fernando + Wife" },
+  "Real Estate": { color: "#8B6B4F", soft: "#EDE2D2", title: "Real Estate", short: "Real Estate", subtitle: "Investment Property" }
 };
 
 // ============================================================
 // RENDER
 // ============================================================
-let perfChart = null, divChart = null, contribChart = null, forecastChart = null;
+let perfChart = null;
 function render(D) {
   const tv = split(D.total_value);
   $("totalValue").innerHTML = `$${tv.int}<span class="cents">.${tv.dec}</span>`;
@@ -1125,7 +916,8 @@ function render(D) {
   const groupVals = {
     QQQ:     { value: D.allocation.QQQ,     cost: D.positions.QQQ.cost },
     SCHD:    { value: D.allocation.SCHD,    cost: D.positions.SCHD.cost },
-    Crypto:  { value: D.allocation.Crypto,  cost: D.positions.BTC.cost + D.positions.ETH.cost },
+    BTC:     { value: D.allocation.BTC,     cost: D.positions.BTC.cost },
+    ETH:     { value: D.allocation.ETH,     cost: D.positions.ETH.cost },
     Cash:    { value: D.allocation.Cash,    cost: D.positions.TAXM.cost + D.positions.LFTB11.cost },
     "401(k)":{ value: D.allocation["401(k)"], cost: D.positions.VFIFX.cost + D.positions.TRRNX.cost }
   };
@@ -1133,8 +925,8 @@ function render(D) {
     groupVals["Real Estate"] = { value: D.real_estate.equity, cost: D.real_estate.cash_invested };
   }
   const QUICK_ORDER = D.real_estate
-    ? ["QQQ","SCHD","Crypto","Cash","401(k)","Real Estate"]
-    : ["QQQ","SCHD","Crypto","Cash","401(k)"];
+    ? ["QQQ","SCHD","BTC","ETH","Cash","401(k)","Real Estate"]
+    : ["QQQ","SCHD","BTC","ETH","Cash","401(k)"];
   QUICK_ORDER.forEach(k => {
     const g = GROUPS[k]; const gv = groupVals[k];
     const allTimePl = gv.value - gv.cost;
@@ -1151,7 +943,7 @@ function render(D) {
     const row = document.createElement("div");
     row.className = "quick-row";
     row.innerHTML = `
-      <div class="quick-name"><span class="swatch-q" style="background:${g.color}"></span><span>${g.title}</span></div>
+      <div class="quick-name"><span class="swatch-q" style="background:${g.color}"></span><span>${g.short || g.title}</span></div>
       <div class="quick-val">${fmtK(gv.value)}</div>
       <div class="quick-pct ${allCls}">${allTimeStr}</div>
       <div class="quick-pct ${ytdCls}">${ytdStr}</div>`;
@@ -1160,13 +952,17 @@ function render(D) {
   // S&P 500 benchmark row — YTD-only reference for whether it's a good or bad year overall
   const spxYtd = D.sp500_ytd_pct || 0;
   const spxCls = spxYtd >= 0 ? "up" : "down";
+  // "live" when the SP500TR quote in Real Time Price is usable; otherwise the last monthly close.
+  const spxSub = (!D.sp500_as_of || D.sp500_as_of === "live")
+    ? "market"
+    : "thru " + new Date(D.sp500_as_of).toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
   const spxRow = document.createElement("div");
   spxRow.className = "quick-row benchmark";
   spxRow.innerHTML = `
-    <div class="quick-name"><span class="swatch-q"></span><span>S&amp;P 500 Benchmark</span></div>
+    <div class="quick-name"><span class="swatch-q"></span><span>S&amp;P 500</span></div>
     <div class="quick-val" style="color:var(--text-3)">—</div>
     <div class="quick-pct" style="color:var(--text-3)">—</div>
-    <div class="quick-pct ${spxCls}">${sgn(spxYtd)}${fmt(Math.abs(spxYtd), 1)}%<span class="qp-sub">market</span></div>`;
+    <div class="quick-pct ${spxCls}">${sgn(spxYtd)}${fmt(Math.abs(spxYtd), 1)}%<span class="qp-sub">${spxSub}</span></div>`;
   qList.appendChild(spxRow);
 
   // Allocation donut
@@ -1210,6 +1006,9 @@ function render(D) {
     }
     let n;
     switch (tf) { case "6M": n = 6; break; case "1Y": n = 12; break; case "2Y": n = 24; break; default: n = series.length; }
+    // The series ends with a live "today" point on top of the month-end closes — keep it
+    // without stealing one of the N months the user asked for.
+    if (series.length && series[series.length - 1].live) n += 1;
     return series.slice(-n);
   }
   function drawChart(tf) {
@@ -1232,7 +1031,10 @@ function render(D) {
       data: {
         labels: port.map(p => p.date),
         datasets: [
-          { label: "Portfolio Value", data: port.map(p => p.value), borderColor: "#E07856", borderWidth: 2.2, backgroundColor: grad, fill: true, tension: 0.35, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: "#E07856", pointHoverBorderColor: "#fff", pointHoverBorderWidth: 2 }
+          { label: "Portfolio Value", data: port.map(p => p.value), borderColor: "#E07856", borderWidth: 2.2, backgroundColor: grad, fill: true, tension: 0.35,
+            pointRadius: port.map((p, i) => (p.live && i === port.length - 1) ? 3.5 : 0),
+            pointBackgroundColor: "#E07856", pointBorderColor: "#fff", pointBorderWidth: 2,
+            pointHoverRadius: 5, pointHoverBackgroundColor: "#E07856", pointHoverBorderColor: "#fff", pointHoverBorderWidth: 2 }
         ]
       },
       options: {
@@ -1281,7 +1083,7 @@ function render(D) {
     const g = GROUPS[key];
     return `<div class="group" style="--group-color:${g.color};--group-soft:${g.soft}">
       <div class="group-head">
-        <div><div class="group-tag">${g.title}</div><div class="group-subtitle">${g.subtitle}</div></div>
+        <div><div class="group-tag">${g.title}</div><div class="group-subtitle">${blocks.subtitle || g.subtitle}</div></div>
         <div><div class="group-value">${blocks.value}</div><div class="group-pct-row"><span class="pill ${blocks.pl >= 0 ? 'pill-up' : 'pill-down'}">${sgn(blocks.plPct)}${fmt(blocks.plPct)}%</span></div></div>
       </div>
       <div class="group-stats">
@@ -1302,10 +1104,33 @@ function render(D) {
   // SCHD
   if (P.SCHD && P.SCHD.qty > 0) { const p = P.SCHD; const s = split(p.value);
     groupsEl.innerHTML += groupCard("SCHD", { value: `$${s.int}<span class="cents">.${s.dec}</span>`, pl: p.pl, plPct: p.pl_pct, cost: p.cost, totalValue: p.value, posCount: 1, extraStat: statBlock("Shares", fmt(p.qty, 0), "@ $" + fmt(p.avg_cost)) }, holdingItem("SCHD", p)); }
-  // Crypto
-  if (P.BTC && P.ETH && (P.BTC.qty > 0 || P.ETH.qty > 0)) {
-    const b = P.BTC, e = P.ETH; const total = b.value + e.value, cost = b.cost + e.cost, pl = total - cost, plPct = cost ? (pl / cost) * 100 : 0; const s = split(total);
-    groupsEl.innerHTML += groupCard("Crypto", { value: `$${s.int}<span class="cents">.${s.dec}</span>`, pl, plPct, cost, totalValue: total, posCount: 2, extraStat: statBlock("Split", `${((b.value / total) * 100).toFixed(0)}/${((e.value / total) * 100).toFixed(0)}`, "BTC / ETH") }, holdingItem("BTC", b, { subline: `${fmt(b.qty, 4)} BTC · @ $${fmt(b.avg_cost, 0)}` }) + holdingItem("ETH", e, { subline: `${fmt(e.qty, 3)} ETH · @ $${fmt(e.avg_cost, 0)}` }));
+  // Bitcoin
+  if (P.BTC && P.BTC.qty > 0) {
+    const b = P.BTC; const s = split(b.value);
+    const ytdNow = (D.ytd_priced_by_group && D.ytd_priced_by_group.BTC) || 0;
+    const end25 = (D.end_2025_by_group && D.end_2025_by_group.BTC) || 0;
+    const ytdPctB = end25 ? ((ytdNow - end25) / end25) * 100 : null;
+    groupsEl.innerHTML += groupCard("BTC", {
+      value: `$${s.int}<span class="cents">.${s.dec}</span>`, pl: b.pl, plPct: b.pl_pct, cost: b.cost, totalValue: b.value, posCount: 1,
+      subtitle: `BTC · $${fmt(b.price, 0)} now`,
+      extraStat: ytdPctB === null
+        ? statBlock("Price", "$" + fmt(b.price, 0), "live")
+        : statBlock("YTD (price)", `${sgn(ytdPctB)}${fmt(Math.abs(ytdPctB), 1)}%`, "same coins since Dec 31", cls(ytdPctB))
+    }, holdingItem("BTC", b, { subline: `${fmt(b.qty, 4)} BTC · avg $${fmt(b.avg_cost, 0)}` }));
+  }
+  // Ethereum
+  if (P.ETH && P.ETH.qty > 0) {
+    const e = P.ETH; const s = split(e.value);
+    const ytdNow = (D.ytd_priced_by_group && D.ytd_priced_by_group.ETH) || 0;
+    const end25 = (D.end_2025_by_group && D.end_2025_by_group.ETH) || 0;
+    const ytdPctE = end25 ? ((ytdNow - end25) / end25) * 100 : null;
+    groupsEl.innerHTML += groupCard("ETH", {
+      value: `$${s.int}<span class="cents">.${s.dec}</span>`, pl: e.pl, plPct: e.pl_pct, cost: e.cost, totalValue: e.value, posCount: 1,
+      subtitle: `ETH · $${fmt(e.price, 0)} now`,
+      extraStat: ytdPctE === null
+        ? statBlock("Price", "$" + fmt(e.price, 0), "live")
+        : statBlock("YTD (price)", `${sgn(ytdPctE)}${fmt(Math.abs(ytdPctE), 1)}%`, "same coins since Dec 31", cls(ytdPctE))
+    }, holdingItem("ETH", e, { subline: `${fmt(e.qty, 3)} ETH · avg $${fmt(e.avg_cost, 0)}` }));
   }
   // Cash
   if (P.TAXM && P.LFTB11) {
@@ -1327,275 +1152,51 @@ function render(D) {
     const gainCls = re.gain_vs_cash >= 0 ? "up" : "down";
     const apprCls = re.appreciation >= 0 ? "up" : "down";
     const apprColor = re.appreciation >= 0 ? "var(--up)" : "var(--down)";
+    const allInCls = re.vs_all_in >= 0 ? "up" : "down";
+    const allInColor = re.vs_all_in >= 0 ? "var(--up)" : "var(--down)";
     const purchaseLabel = re.purchase_date
-      ? new Date(re.purchase_date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+      ? new Date(re.purchase_date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" })
       : "—";
+    const rateStr = fmt(re.interest_rate, 3).replace(/0+$/, "").replace(/\.$/, "");
     groupsEl.innerHTML += `<div class="group" style="--group-color:${g.color};--group-soft:${g.soft}">
       <div class="group-head">
-        <div><div class="group-tag">${g.title}</div><div class="group-subtitle">${g.subtitle}</div></div>
+        <div><div class="group-tag">${g.title}</div><div class="group-subtitle">Equity · bought ${purchaseLabel}</div></div>
         <div>
           <div class="group-value">${eqHtml}</div>
           <div class="group-pct-row"><span class="pill ${re.gain_vs_cash >= 0 ? 'pill-up' : 'pill-down'}">${sgn(re.gain_pct_vs_cash)}${fmt(Math.abs(re.gain_pct_vs_cash), 1)}%</span></div>
         </div>
       </div>
       <div class="group-stats">
+        ${statBlock("Market Value", "$" + fmt(re.market_value, 0), `${sgn(re.appreciation)}$${fmt(Math.abs(re.appreciation), 0)} vs purchase`, apprCls)}
         ${statBlock("Cash Invested", "$" + fmt(re.cash_invested, 0), "DP · closing · remodel")}
-        ${statBlock("Unrealized", `${sgn(re.gain_vs_cash)}$${fmt(Math.abs(re.gain_vs_cash), 0)}`, "vs cash invested", gainCls)}
+        ${statBlock("Mortgage", "$" + fmt(re.mortgage_balance, 0), `${fmt(re.ltv_pct, 1)}% LTV`)}
         ${statBlock("% of Portfolio", pctOf(re.equity))}
-        ${statBlock("Appreciation", `${sgn(re.appreciation_pct)}${fmt(Math.abs(re.appreciation_pct), 1)}%`, `${sgn(re.appreciation)}$${fmt(Math.abs(re.appreciation), 0)} vs purchase`, apprCls)}
       </div>
       <div class="holdings">
         <div class="hcard">
-          <div class="hcard-left"><span class="hcard-ticker">Down Payment</span><span class="hcard-name">Equity contribution</span></div>
+          <div class="hcard-left"><span class="hcard-ticker">Equity Build</span><span class="hcard-name">Down payment + principal + appreciation</span></div>
+          <div class="hcard-right"><span class="hcard-val">$${fmt(re.equity, 0)}</span><span class="hcard-pct" style="color:${apprColor}">${sgn(re.appreciation)}$${fmt(Math.abs(re.appreciation), 0)} appr.</span></div>
+        </div>
+        <div class="hcard">
+          <div class="hcard-left"><span class="hcard-ticker">All-in Cost</span><span class="hcard-name">Purchase $${fmt(re.purchase_price, 0)} + closing + remodel</span></div>
+          <div class="hcard-right"><span class="hcard-val">$${fmt(re.all_in_cost, 0)}</span><span class="hcard-pct" style="color:${allInColor}">${sgn(re.vs_all_in)}$${fmt(Math.abs(re.vs_all_in), 0)} vs market</span></div>
+        </div>
+        <div class="hcard">
+          <div class="hcard-left"><span class="hcard-ticker">Down Payment</span><span class="hcard-name">Closing $${fmt(re.closing_cost, 0)} · remodel $${fmt(re.remodeling_cost, 0)}</span></div>
           <div class="hcard-right"><span class="hcard-val">$${fmt(re.down_payment, 0)}</span></div>
         </div>
         <div class="hcard">
-          <div class="hcard-left"><span class="hcard-ticker">Closing Cost</span><span class="hcard-name">Recoupable via appreciation</span></div>
-          <div class="hcard-right"><span class="hcard-val">$${fmt(re.closing_cost, 0)}</span></div>
+          <div class="hcard-left"><span class="hcard-ticker">Loan</span><span class="hcard-name">${rateStr}% · ${re.term_label} · $${fmt(re.monthly_payment, 0)}/mo P&amp;I</span></div>
+          <div class="hcard-right"><span class="hcard-val">$${fmt(re.original_loan, 0)}</span><span class="hcard-pct" style="color:var(--text-3)">originated</span></div>
         </div>
         <div class="hcard">
-          <div class="hcard-left"><span class="hcard-ticker">Remodeling</span><span class="hcard-name">Adds to property value</span></div>
-          <div class="hcard-right"><span class="hcard-val">$${fmt(re.remodeling_cost, 0)}</span></div>
-        </div>
-        <div class="hcard">
-          <div class="hcard-left"><span class="hcard-ticker">Mortgage</span><span class="hcard-name">${fmt(re.interest_rate, 3)}% · $${fmt(re.principal_paid, 0)} paid down</span></div>
-          <div class="hcard-right"><span class="hcard-val">$${fmt(re.mortgage_balance, 0)}</span><span class="hcard-pct" style="color:var(--text-3)">remaining</span></div>
-        </div>
-        <div class="hcard">
-          <div class="hcard-left"><span class="hcard-ticker">Zestimate</span><span class="hcard-name">Bought $${fmt(re.purchase_price, 0)} · ${purchaseLabel}</span></div>
-          <div class="hcard-right"><span class="hcard-val">$${fmt(re.zestimate, 0)}</span><span class="hcard-pct" style="color:${apprColor}">${sgn(re.appreciation_pct)}${fmt(Math.abs(re.appreciation_pct), 1)}%</span></div>
+          <div class="hcard-left"><span class="hcard-ticker">Paid Down</span><span class="hcard-name">${re.payments_made} payment${re.payments_made === 1 ? "" : "s"} · $${fmt(re.interest_paid, 0)} interest</span></div>
+          <div class="hcard-right"><span class="hcard-val">$${fmt(re.principal_paid, 0)}</span><span class="hcard-pct" style="color:var(--text-3)">principal</span></div>
         </div>
       </div>
     </div>`;
   }
 
-  // Money Added to Portfolio (stacked bar by group, with same timeframe selectors as Portfolio Value)
-  const contribCtx = $("contribChart").getContext("2d");
-  const CONTRIB_GROUPS = D.real_estate
-    ? ["QQQ", "SCHD", "Crypto", "Cash", "401(k)", "Real Estate"]
-    : ["QQQ", "SCHD", "Crypto", "Cash", "401(k)"];
-  function contribTfSlice(tf) {
-    const all = D.contributions_monthly || [];
-    if (!all.length) return all;
-    if (tf === "ALL") return all;
-    if (tf === "YTD") {
-      return all.filter(m => m.month >= "2026-01");
-    }
-    const n = tf === "6M" ? 6 : tf === "1Y" ? 12 : tf === "2Y" ? 24 : all.length;
-    // Pad: ensure last N months ending current month are present (fill missing with zeros)
-    const today = new Date();
-    const months = [];
-    for (let i = n - 1; i >= 0; i--) {
-      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-      const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
-      const found = all.find(m => m.month === key);
-      months.push(found || { month: key, QQQ: 0, SCHD: 0, Crypto: 0, Cash: 0, "401(k)": 0, "Real Estate": 0 });
-    }
-    return months;
-  }
-  // Render legend chips
-  const cLegend = $("contribLegend"); cLegend.innerHTML = "";
-  CONTRIB_GROUPS.forEach(k => {
-    const g = GROUPS[k];
-    const it = document.createElement("div");
-    it.className = "cl-item";
-    it.innerHTML = `<span class="cl-line" style="background:${g.color}"></span><span>${g.title}</span>`;
-    cLegend.appendChild(it);
-  });
-  function drawContrib(tf) {
-    const series = contribTfSlice(tf);
-    const labels = series.map(m => m.month);
-    const datasets = CONTRIB_GROUPS.map(k => ({
-      label: GROUPS[k].title,
-      data: series.map(m => +(m[k] || 0).toFixed(2)),
-      backgroundColor: GROUPS[k].color,
-      borderRadius: 4,
-      borderSkipped: false,
-      stack: "added"
-    }));
-    const total = series.reduce((s, m) => s + CONTRIB_GROUPS.reduce((a, k) => a + (m[k] || 0), 0), 0);
-    $("contribTotal").textContent = "$" + fmt(total, 0);
-    $("contribRange").textContent = tf === "YTD" ? "YTD" : (tf === "ALL" ? "All time" : "Last " + tf);
-    if (contribChart) contribChart.destroy();
-    contribChart = new Chart(contribCtx, {
-      type: "bar",
-      data: { labels, datasets },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        animation: { duration: 500, easing: "easeOutCubic" },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: "#FFFFFF", titleColor: "#A89A8E", bodyColor: "#2A201A",
-            borderColor: "rgba(42,32,26,.08)", borderWidth: 1, padding: 10,
-            titleFont: { family: "Inter", size: 11, weight: 600 },
-            bodyFont: { family: "Inter", size: 12, weight: 700 },
-            displayColors: true, boxWidth: 8, boxHeight: 8, boxPadding: 4,
-            callbacks: {
-              title: i => i[0].label,
-              label: c => " " + c.dataset.label + ": $" + c.parsed.y.toLocaleString("en-US", { maximumFractionDigits: 0 }),
-              footer: items => {
-                const sum = items.reduce((s, it) => s + it.parsed.y, 0);
-                return "Total: $" + sum.toLocaleString("en-US", { maximumFractionDigits: 0 });
-              }
-            }
-          }
-        },
-        scales: {
-          x: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { color: "#A89A8E", font: { family: "Inter", size: 10, weight: 500 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8,
-            callback: function (v) { const l = this.getLabelForValue(v); const [y, m] = l.split("-"); return ["J","F","M","A","M","J","J","A","S","O","N","D"][parseInt(m) - 1] + (m === "01" ? " " + y.slice(2) : ""); } } },
-          y: { stacked: true, grid: { color: "rgba(42,32,26,.05)", drawTicks: false }, border: { display: false }, ticks: { color: "#A89A8E", font: { family: "Inter", size: 10, weight: 500 }, padding: 6, maxTicksLimit: 5, callback: v => v >= 1000 ? "$" + (v / 1000).toFixed(0) + "K" : "$" + v } }
-        },
-        interaction: { intersect: false, mode: "index" }
-      }
-    });
-  }
-  drawContrib("YTD");
-  $("contribTimeframe").onclick = e => {
-    const btn = e.target.closest(".tf-btn"); if (!btn) return;
-    $("contribTimeframe").querySelectorAll(".tf-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    drawContrib(btn.dataset.tf);
-  };
-
-  // Dividends
-  const ttm = D.dividends_monthly.slice(-12).reduce((a, b) => a + b.amount, 0);
-  const yieldPct = D.total_value ? (ttm / D.total_value) * 100 : 0;
-  const monthlyAvg = ttm / 12;
-  const ytdMonths = D.dividends_monthly.filter(d => d.month && d.month.startsWith("2026")).length;
-  const div26 = D.div_2026_ytd || 0;
-  const div25Same = D.div_2025_ytd_same || 0;
-  const divDelta = div26 - div25Same;
-  const divDeltaPct = div25Same ? (divDelta / div25Same) * 100 : 0;
-  const todayLabel = (new Date()).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  $("dyYield").textContent = fmt(yieldPct) + "%";
-  $("dyYieldSub").textContent = "$" + fmt(ttm, 0) + " trailing 12mo";
-  $("dyMonthly").textContent = "$" + fmt(monthlyAvg, 0);
-  $("dyMonthlySub").textContent = "TTM avg";
-  $("dy2026").textContent = "$" + fmt(div26, 0);
-  $("dy2026Sub").textContent = "Through " + todayLabel;
-  $("dy2025YTD").textContent = "$" + fmt(div25Same, 0);
-  $("dy2025YTDSub").textContent = "Jan 1 → " + todayLabel + " 2025";
-  if (div25Same > 0) {
-    const cls = divDelta >= 0 ? "var(--up)" : "var(--down)";
-    $("divYtdCompare").innerHTML = `<span class="lbl">2026 YTD vs 2025 same period</span><span class="val" style="color:${cls}">${divDelta >= 0 ? "↑" : "↓"} ${sgn(divDelta)}$${fmt(Math.abs(divDelta), 0)} (${sgn(divDeltaPct)}${fmt(Math.abs(divDeltaPct), 1)}%)</span>`;
-  } else {
-    $("divYtdCompare").innerHTML = `<span class="lbl">2026 YTD vs 2025 same period</span><span class="val" style="color:var(--text-3)">No 2025 data for this window</span>`;
-  }
-
-  const divCtx = $("divChart").getContext("2d");
-  const last12 = D.dividends_monthly.slice(-12);
-  if (divChart) divChart.destroy();
-  divChart = new Chart(divCtx, {
-    type: "bar",
-    data: { labels: last12.map(d => d.month), datasets: [{ data: last12.map(d => d.amount), backgroundColor: "#E07856", borderRadius: 6, borderSkipped: false, barPercentage: 0.7, categoryPercentage: 0.85 }] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      animation: { duration: 600, easing: "easeOutCubic" },
-      plugins: {
-        legend: { display: false },
-        tooltip: { backgroundColor: "#FFFFFF", titleColor: "#A89A8E", bodyColor: "#2A201A", borderColor: "rgba(42,32,26,.08)", borderWidth: 1, padding: 10, titleFont: { family: "Inter", size: 11, weight: 600 }, bodyFont: { family: "Inter", size: 12, weight: 700 }, displayColors: false, callbacks: { title: i => i[0].label, label: c => " $" + c.parsed.y.toFixed(2) } }
-      },
-      scales: {
-        x: { grid: { display: false }, border: { display: false }, ticks: { color: "#A89A8E", font: { family: "Inter", size: 9, weight: 500 }, maxRotation: 0, callback: function (v) { const l = this.getLabelForValue(v); const [y, m] = l.split("-"); return ["J","F","M","A","M","J","J","A","S","O","N","D"][parseInt(m)-1]; } } },
-        y: { grid: { color: "rgba(42,32,26,.05)", drawTicks: false }, border: { display: false }, ticks: { color: "#A89A8E", font: { family: "Inter", size: 9, weight: 500 }, padding: 6, maxTicksLimit: 4, callback: v => v >= 1000 ? "$" + (v / 1000).toFixed(1) + "K" : "$" + v } }
-      }
-    }
-  });
-
-  const divList = $("divList"); divList.innerHTML = "";
-  (D.div_recent || []).slice(0, 6).forEach(d => {
-    const el = document.createElement("div");
-    el.className = "div-row";
-    el.innerHTML = `<div class="div-row-l"><span class="div-tk">${d.ticker}</span><span class="div-date">${d.date}</span></div><span class="div-amt">$${fmt(d.amount)}</span>`;
-    divList.appendChild(el);
-  });
-
-  // Forecast 2026-2029 (year-end values, dividends reinvested via FUTURE assumptions)
-  const fc = D.forecast;
-  if (fc && fc.values && fc.values.length) {
-    $("forecastCard").style.display = "";
-    const labels = fc.years.map(y => String(y));
-    const values = fc.values;
-    // Forecast excludes Real Estate (no FUTURE assumptions yet) — keep "Today" baseline liquid-only
-    // so the Today → End 2029 delta is apples-to-apples with the bars.
-    const reEq = (D.real_estate && D.real_estate.equity) || 0;
-    const todayVal = D.total_value - reEq;
-    const endVal = values[values.length - 1];
-    const delta = endVal - todayVal;
-    const deltaPct = todayVal ? (delta / todayVal) * 100 : 0;
-    // Today + End 2029 cards
-    const tvSplit = fmt(todayVal, 0);
-    const evSplit = fmt(endVal, 0);
-    $("fc-today").textContent = "$" + tvSplit;
-    $("fc-today-sub").textContent = reEq > 0 ? "Liquid portfolio (excl. Real Estate)" : "Current value (baseline)";
-    $("fc-end").textContent = "$" + evSplit;
-    $("fc-delta-sub").innerHTML = `<span style="color:${delta >= 0 ? 'var(--up)' : 'var(--down)'};font-weight:700">${sgn(delta)}$${fmt(Math.abs(delta), 0)} (${sgn(deltaPct)}${fmt(Math.abs(deltaPct), 0)}%)</span>`;
-    if (typeof fc.months_left_2026 === "number" && fc.months_left_2026 < 12 && fc.months_left_2026 > 0) {
-      $("forecastNote").textContent = `Reinvested · DCA · ${fc.months_left_2026}mo left in 2026`;
-    } else {
-      $("forecastNote").textContent = "Reinvested · DCA";
-    }
-    const fcCtx = $("forecastChart").getContext("2d");
-    if (forecastChart) forecastChart.destroy();
-    forecastChart = new Chart(fcCtx, {
-      type: "bar",
-      data: {
-        labels,
-        datasets: [{
-          label: "Year-End Total",
-          data: values,
-          backgroundColor: ["#7DBDB0", "#5FAB9C", "#4D9C8C", "#3F8979"],
-          borderRadius: 10,
-          borderSkipped: false,
-          barPercentage: 0.62,
-          categoryPercentage: 0.78
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        layout: { padding: { top: 26 } },
-        animation: { duration: 600, easing: "easeOutCubic" },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: "#FFFFFF", titleColor: "#A89A8E", bodyColor: "#2A201A",
-            borderColor: "rgba(42,32,26,.08)", borderWidth: 1, padding: 10,
-            titleFont: { family: "Inter", size: 11, weight: 600 },
-            bodyFont: { family: "Inter", size: 12, weight: 700 },
-            displayColors: false,
-            callbacks: { title: i => i[0].label + " (year-end)", label: c => " $" + c.parsed.y.toLocaleString("en-US", { maximumFractionDigits: 0 }) }
-          }
-        },
-        scales: {
-          x: { grid: { display: false }, border: { display: false }, ticks: { color: "#2A201A", font: { family: "Inter", size: 12, weight: 700 } } },
-          y: { beginAtZero: false, grid: { color: "rgba(42,32,26,.05)", drawTicks: false }, border: { display: false }, ticks: { color: "#A89A8E", font: { family: "Inter", size: 10, weight: 500 }, padding: 6, maxTicksLimit: 5, callback: v => v >= 1e6 ? "$" + (v / 1e6).toFixed(1) + "M" : v >= 1000 ? "$" + (v / 1000).toFixed(0) + "K" : "$" + v } }
-        }
-      },
-      plugins: [{
-        id: "barValueLabels",
-        afterDatasetsDraw(chart) {
-          const { ctx } = chart;
-          chart.data.datasets[0].data.forEach((val, i) => {
-            const meta = chart.getDatasetMeta(0).data[i];
-            if (!meta) return;
-            const label = val >= 1e6 ? "$" + (val / 1e6).toFixed(2) + "M" : "$" + (val / 1000).toFixed(0) + "K";
-            ctx.save();
-            ctx.fillStyle = "#2A201A";
-            ctx.font = "700 11px Inter, sans-serif";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "bottom";
-            ctx.fillText(label, meta.x, meta.y - 6);
-            ctx.restore();
-          });
-        }
-      }]
-    });
-  } else {
-    $("forecastCard").style.display = "none";
-  }
-
-  $("notes").innerHTML = (D.data_quality_notes || []).map(n => `<li>${n}</li>`).join("");
 }
 
 // ============================================================
