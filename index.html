@@ -309,7 +309,9 @@ function compute(raw) {
   const prices = {};
   rt.forEach(r => {
     const t = r.TICKER || r.Ticker || r.ticker;
-    if (t) prices[t] = toNum(r.PRICE || r.Price || r.price);
+    // TRIM the ticker: the sheet's SP500TR cell carries a trailing space, so an untrimmed key
+    // made prices.SP500TR undefined and the benchmark silently fell back to the last monthly close.
+    if (t) prices[String(t).trim()] = toNum(r.PRICE || r.Price || r.price);
   });
   // BTC/ETH swap fix: BTC must be > ETH
   if (prices.BTC && prices.ETH && prices.BTC < prices.ETH) {
