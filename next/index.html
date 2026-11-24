@@ -1150,8 +1150,8 @@ function render(D) {
       ["House: cash in + principal", P2.house]
     ].filter(([, v]) => Math.abs(v) >= 0.5).map(([l, v]) => `<span>${l}</span><b>${money(v)}</b>`).join("")
       + (F.return_pct == null ? "" :
-        `<span class="ys-sep">Average money invested this year</span><b class="ys-sep">$${fmt(F.avg_capital, 0)}</b>`
-        + `<span>YTD Return = growth ÷ average invested</span><b style="color:${pctColor(F.return_pct)}">${sgn(F.return_pct)}${fmt(Math.abs(F.return_pct))}%</b>`);
+        `<span class="ys-sep">Average invested this year</span><b class="ys-sep">$${fmt(F.avg_capital, 0)}</b>`
+        + `<span>YTD Return (growth ÷ avg.)</span><b style="color:${pctColor(F.return_pct)}">${sgn(F.return_pct)}${fmt(Math.abs(F.return_pct))}%</b>`);
     ys.classList.remove("hidden");
   } else {
     ys.classList.add("hidden");
