@@ -1,3 +1,8 @@
 DEPLOYMENT_CREDENTIALS.md
 *.env
 .DS_Store
+
+# Smoke-test dependencies (installed locally, never committed)
+tests/node_modules/
+tests/package.json
+tests/package-lock.json
