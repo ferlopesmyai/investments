@@ -166,6 +166,7 @@ footer{text-align:center;font-size:11px;color:rgba(255,255,255,.6);font-weight:5
 .ys-dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}
 .ys-parts{display:grid;grid-template-columns:1fr auto;gap:5px 12px;margin-top:12px;padding:12px 14px;background:var(--card-soft);border-radius:12px;font-size:12px;color:var(--text-2)}
 .ys-parts b{font-family:"Inter",sans-serif;font-weight:700;color:var(--text);text-align:right;font-variant-numeric:tabular-nums}
+.ys-parts .ys-sep{border-top:1px solid var(--border);padding-top:7px;margin-top:3px}
 .hidden{display:none!important}
 </style>
 </head>
@@ -843,52 +844,65 @@ function compute(raw) {
   const sp500_ytd_pct = sp500_end_2025 ? +(((sp500_now - sp500_end_2025) / sp500_end_2025) * 100).toFixed(2) : 0;
   const sp500_as_of = sp500_live_ok ? "live" : sp500_last_date;
 
-  // ---- This year's change: new money vs growth ----
+  // ---- This year's change: new money vs growth, and the money-weighted return ----
   // New money = cash that came into the tracked portfolio from outside since Dec 31, 2025:
   //   brokerage buys − sales (internal rotations like BIL→TAXM cancel out), crypto buys,
   //   401(k) contributions (incl. employer match), and for the house the cash put in at purchase
-  //   (down payment + closing + remodel) plus mortgage principal paid since.
-  // Growth = everything else in the change (price moves on everything, incl. this year's buys,
-  //   plus the house's value vs what went into it). Reinvested dividends booked as BUYs count as
-  //   new money — consistent with the price-only all-time gain.
+  //   (down payment + closing + remodel) plus mortgage principal as it is paid.
+  // Growth = the rest of the change (price moves on everything, incl. this year's buys, plus the
+  //   house's value vs what went into it). Reinvested dividends booked as BUYs count as new money.
+  // YTD Return (top card) = money-weighted return (Modified Dietz): growth ÷ average money invested,
+  //   where each flow counts for the share of the year it was invested — the "personal rate of
+  //   return" brokers report. Per-asset YTD in Quick Overview stays price return (vs the S&P 500).
   // Transactions dated Dec 31, 2025 belong to the year-end snapshot, so the window starts Jan 1.
   const yStart = new Date(2026, 0, 1);
-  const inYear = d => d && d >= yStart;
-  const flowParts = { k401: 0, brokerage: 0, crypto: 0, house: 0 };
+  const yNow = new Date();
+  const inYear = d => d && d >= yStart && d <= yNow;
+  const flowList = [];                       // { part, d, amt }
+  const addFlow = (part, d, amt) => { if (inYear(d) && amt) flowList.push({ part, d, amt }); };
   ["QQQ", "SCHD", "TAXM", "BIL", "LFTB11"].forEach(t => findSheet(raw, t).forEach(r => {
     const rawQ = r.QTD;
     if (typeof rawQ === "string" && !/^[\d.,]+$/.test(rawQ.replace(/\s/g, ""))) return;
     const q = toNum(rawQ); if (!(q > 0)) return;
-    if (!inYear(toDate(r.Date, "dmy"))) return;
     const tot = toNum(r.Total) || q * toNum(r.Price);
     const ty = String(r.Type || "").toUpperCase().trim();
-    if (ty === "BUY") flowParts.brokerage += tot;
-    else if (ty === "SELL") flowParts.brokerage -= tot;
+    const d = toDate(r.Date, "dmy");
+    if (ty === "BUY") addFlow("brokerage", d, tot);
+    else if (ty === "SELL") addFlow("brokerage", d, -tot);
   }));
   ["BTC", "ETH"].forEach(t => findSheet(raw, t).forEach(r => {
     if (!(toNum(r.QTD || r.Qtd || r.qtd) > 0)) return;
-    if (!inYear(toDate(r["Date USA"] || r.Date, "mdy"))) return;
     const tk = Object.keys(r).find(k => /total\s*usd/i.test(k));
-    flowParts.crypto += tk ? toNum(r[tk]) : 0;
+    addFlow("crypto", toDate(r["Date USA"] || r.Date, "mdy"), tk ? toNum(r[tk]) : 0);
   }));
-  vfRows.forEach(r => { if (/Plan Contribution/i.test(String(r.Type || "")) && inYear(toDate(r.Date, "mdy"))) flowParts.k401 += toNum(r.Amount); });
-  brRows.forEach(r => { if (/Contribution/i.test(String(r["Activity Type"] || "")) && inYear(toDate(r.Date, "mdy"))) flowParts.k401 += toNum(r.Amount); });
-  if (realEstate) {
-    if (realEstate.purchase_date && realEstate.purchase_date >= "2026-01-01") {
-      flowParts.house = realEstate.cash_invested + realEstate.principal_paid;
-    } else if (realEstate.purchase_date) {
-      const before = amortize(realEstate.original_loan, realEstate.interest_rate, realEstate.term_months,
-        paymentsElapsed(new Date(realEstate.purchase_date + "T12:00:00"), yStart)).principal_paid;
-      flowParts.house = realEstate.principal_paid - before;
+  vfRows.forEach(r => { if (/Plan Contribution/i.test(String(r.Type || ""))) addFlow("k401", toDate(r.Date, "mdy"), toNum(r.Amount)); });
+  brRows.forEach(r => { if (/Contribution/i.test(String(r["Activity Type"] || ""))) addFlow("k401", toDate(r.Date, "mdy"), toNum(r.Amount)); });
+  if (realEstate && realEstate.purchase_date) {
+    const pd = new Date(realEstate.purchase_date + "T12:00:00");
+    addFlow("house", pd, realEstate.cash_invested);               // only counts if bought this year
+    // Principal, payment by payment (first payment = 1st of the 2nd month after closing).
+    const am = k => amortize(realEstate.original_loan, realEstate.interest_rate, realEstate.term_months, k).principal_paid;
+    for (let k = 1; k <= realEstate.payments_made; k++) {
+      addFlow("house", new Date(pd.getFullYear(), pd.getMonth() + 1 + k, 1), am(k) - am(k - 1));
     }
   }
-  const newMoney = flowParts.k401 + flowParts.brokerage + flowParts.crypto + flowParts.house;
-  const ytd_flows = end_2025_value != null ? {
-    change: +(total_value - end_2025_value).toFixed(2),
-    new_money: +newMoney.toFixed(2),
-    growth: +((total_value - end_2025_value) - newMoney).toFixed(2),
-    parts: Object.fromEntries(Object.entries(flowParts).map(([k, v]) => [k, +v.toFixed(2)]))
-  } : null;
+  const flowParts = { k401: 0, brokerage: 0, crypto: 0, house: 0 };
+  flowList.forEach(f => { flowParts[f.part] += f.amt; });
+  const newMoney = flowList.reduce((a, f) => a + f.amt, 0);
+  let ytd_flows = null;
+  if (end_2025_value != null) {
+    const span = Math.max(1, yNow - yStart);
+    const avgCapital = end_2025_value + flowList.reduce((a, f) => a + f.amt * Math.min(1, Math.max(0, (yNow - f.d) / span)), 0);
+    const growth = (total_value - end_2025_value) - newMoney;
+    ytd_flows = {
+      change: +(total_value - end_2025_value).toFixed(2),
+      new_money: +newMoney.toFixed(2),
+      growth: +growth.toFixed(2),
+      avg_capital: +avgCapital.toFixed(2),
+      return_pct: avgCapital > 0 ? +((growth / avgCapital) * 100).toFixed(2) : null,
+      parts: Object.fromEntries(Object.entries(flowParts).map(([k, v]) => [k, +v.toFixed(2)]))
+    };
+  }
 
   // ---- Final schema ----
   return {
@@ -1104,14 +1118,13 @@ function render(D) {
   $("allocAsOf").textContent = D.as_of;
 
   const end2025 = D.end_2025_value || 0;
-  // YTD = price-only return (apples-to-apples with S&P 500 sentinel below).
-  const ytdChg = (D.ytd_priced_total || 0) - end2025;
-  const ytdPct = end2025 ? (ytdChg / end2025) * 100 : 0;
 
   $("ytdEnd2025").innerHTML = `$${fmt(end2025, 0)}`;
-  // YTD Return shows the % only (price return on Jan 1 holdings — the figure to compare with the S&P 500).
-  // The dollar side of the year lives in "Change this year" below, split into new money vs growth.
-  $("ytdChange").innerHTML = `<span style="color:${ytdChg >= 0 ? 'var(--up)' : 'var(--down)'}">${sgn(ytdPct)}${fmt(ytdPct)}%</span>`;
+  // YTD Return = money-weighted: growth ÷ average money invested this year (see compute() → ytd_flows).
+  // Per-asset YTD in Quick Overview stays price return, next to the S&P 500.
+  const ret = D.ytd_flows ? D.ytd_flows.return_pct : null;
+  $("ytdChange").innerHTML = ret == null ? "—"
+    : `<span style="color:${pctColor(ret)}">${sgn(ret)}${fmt(Math.abs(ret))}%</span>`;
 
   // Change this year = new money + growth (see compute() → ytd_flows).
   const F = D.ytd_flows, ys = $("ytdSplit");
@@ -1135,7 +1148,10 @@ function render(D) {
       ["Brokerage buys − sales", P2.brokerage],
       ["Crypto buys", P2.crypto],
       ["House: cash in + principal", P2.house]
-    ].filter(([, v]) => Math.abs(v) >= 0.5).map(([l, v]) => `<span>${l}</span><b>${money(v)}</b>`).join("");
+    ].filter(([, v]) => Math.abs(v) >= 0.5).map(([l, v]) => `<span>${l}</span><b>${money(v)}</b>`).join("")
+      + (F.return_pct == null ? "" :
+        `<span class="ys-sep">Average money invested this year</span><b class="ys-sep">$${fmt(F.avg_capital, 0)}</b>`
+        + `<span>YTD Return = growth ÷ average invested</span><b style="color:${pctColor(F.return_pct)}">${sgn(F.return_pct)}${fmt(Math.abs(F.return_pct))}%</b>`);
     ys.classList.remove("hidden");
   } else {
     ys.classList.add("hidden");
