@@ -7,11 +7,14 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Portfolio">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Portfolio · Fernando</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<!-- integrity pins the exact Chart.js file: if the CDN ever served anything else, the browser refuses it -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js" integrity="sha384-DhxhYObIMeMNGyAG7iK11OHzBIKyEIeRL0ad1iFPAOwZB8iirUlTT0O/WJJUk8+o" crossorigin="anonymous"></script>
 <style>
 :root {
   --bg: #A07868; --bg-soft: #B89384;
@@ -82,10 +85,22 @@ body{background:var(--bg);color:var(--text);font-family:"Plus Jakarta Sans",-app
 .donut-wrap{display:flex;align-items:center;gap:18px}
 .donut-canvas{width:110px;height:110px;flex-shrink:0;position:relative}
 .donut-canvas canvas{display:block;width:110px!important;height:110px!important}
-.quick-grid-head{display:grid;grid-template-columns:1.1fr 86px 70px 70px;gap:8px;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:0 4px 8px;border-bottom:1px solid var(--border-2)}
+.quick-grid-head{display:grid;grid-template-columns:minmax(0,1fr) 60px 54px 54px;gap:6px;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:0 2px 8px;border-bottom:1px solid var(--border-2)}
 .quick-grid-head .qh-r{text-align:right}
-.quick-row{display:grid;grid-template-columns:1.1fr 86px 70px 70px;gap:8px;align-items:center;padding:11px 4px;border-bottom:1px solid var(--border-2)}
+.quick-row{display:grid;grid-template-columns:minmax(0,1fr) 60px 54px 54px;gap:6px;align-items:center;padding:11px 2px;border-bottom:1px solid var(--border-2)}
 .quick-row:last-child{border-bottom:none}
+.quick-row.tap{cursor:pointer;-webkit-tap-highlight-color:transparent;border-radius:10px;transition:background .15s}
+.quick-row.tap:active{background:var(--card-soft)}
+.quick-row.tap.open{border-bottom-color:transparent}
+.quick-name .chev{width:6px;height:6px;flex-shrink:0;border-right:1.6px solid var(--text-3);border-bottom:1.6px solid var(--text-3);transform:rotate(-45deg);margin-left:2px;transition:transform .18s}
+.quick-row.open .quick-name .chev{transform:rotate(45deg) translate(-1px,-1px)}
+.quick-name .qn{display:flex;flex-direction:column;min-width:0}
+.quick-name .qn-sub{font-size:9px;font-weight:600;color:var(--text-3);letter-spacing:.02em;margin-top:1px}
+.qdetail{border-left:3px solid var(--group-color);padding:4px 0 12px 10px;margin:0 0 6px 2px;border-bottom:1px solid var(--border-2)}
+.qdetail .group-stats{margin-bottom:8px}
+.qdetail .hcard{background:var(--card-cream)}
+.cl-split{font-size:11px;font-weight:600;color:var(--text-2);margin:-8px 0 12px;line-height:1.5}
+.cl-split b{font-family:"Inter",sans-serif;font-weight:700}
 .quick-row.benchmark{border-top:1px solid var(--border);border-bottom:none;margin-top:4px;padding-top:13px}
 .quick-row.benchmark .quick-name{color:var(--text-2);font-weight:600;font-size:12px}
 .quick-row.benchmark .quick-name .swatch-q{background:repeating-linear-gradient(45deg,var(--text-3),var(--text-3) 3px,#fff 3px,#fff 5px)!important}
@@ -224,8 +239,9 @@ footer{text-align:center;font-size:11px;color:rgba(255,255,255,.6);font-weight:5
       <div class="card-head"><span class="card-title">Portfolio Value</span></div>
       <div class="chart-legend">
         <div class="cl-item"><span class="cl-line" style="background:var(--coral)"></span><span id="cl-port-label">Now</span><span class="cl-value" id="cl-port-val">$0</span></div>
-        <div class="cl-item"><span style="font-weight:600">Change</span><span class="cl-value" id="cl-port-change">$0</span></div>
+        <div class="cl-item"><span style="font-weight:600">Value change</span><span class="cl-value" id="cl-port-change">$0</span></div>
       </div>
+      <div class="cl-split hidden" id="cl-split"></div>
       <div class="chart-canvas"><canvas id="perfChart"></canvas></div>
       <div class="tf-row" style="margin-top:14px" id="timeframe">
         <button class="tf-btn" data-tf="6M">6M</button>
@@ -235,8 +251,6 @@ footer{text-align:center;font-size:11px;color:rgba(255,255,255,.6);font-weight:5
         <button class="tf-btn" data-tf="ALL">ALL</button>
       </div>
     </div>
-
-    <div id="groups"></div>
 
     <footer>Source · INVESTIMENTS API · As of <span id="asof"></span></footer>
   </div>
@@ -314,6 +328,10 @@ function getCol(row, name) {
 
 function isoMonth(d) {
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+}
+// Today's date on the device's clock (toISOString() is UTC, which reads as tomorrow after 7 pm ET).
+function localISO(d = new Date()) {
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 }
 
 // ============================================================
@@ -754,7 +772,7 @@ function compute(raw) {
   // until it closes — so the series would otherwise stop weeks in the past while the hero card
   // shows today's live number. Append a live "today" point (live prices, current holdings) so the
   // chart actually ends at the value shown at the top of the dashboard.
-  const todayISO = new Date().toISOString().slice(0, 10);
+  const todayISO = localISO();
   const liveGroups = {
     QQQ: positions.QQQ.value,
     SCHD: positions.SCHD.value,
@@ -818,7 +836,7 @@ function compute(raw) {
 
   // ---- Final schema ----
   return {
-    as_of: new Date().toISOString().slice(0, 10),
+    as_of: localISO(),
     total_value: +total_value.toFixed(2),
     total_cost: +total_cost.toFixed(2),
     unrealized_pl: +(total_value - total_cost).toFixed(2),
@@ -938,9 +956,86 @@ const GROUPS = {
 };
 
 // ============================================================
+// QUICK OVERVIEW DETAIL PANELS
+// ============================================================
+let openGroup = null;   // which Quick Overview row is expanded (survives the cache → live re-render)
+function toggleGroup(k) {
+  openGroup = openGroup === k ? null : k;
+  const list = $("quickList");
+  list.querySelectorAll(".quick-row.tap").forEach(r => {
+    const on = r.dataset.k === openGroup;
+    r.classList.toggle("open", on);
+    r.setAttribute("aria-expanded", on ? "true" : "false");
+  });
+  list.querySelectorAll(".qdetail").forEach(p => p.classList.toggle("hidden", p.dataset.k !== openGroup));
+}
+const pctColor = n => n >= 0 ? "var(--up)" : "var(--down)";
+function statBlock(label, value, sub, klass) {
+  return `<div class="stat"><span class="stat-label">${label}</span><span class="stat-val ${klass || ""}">${value}</span>${sub ? `<span class="stat-sub">${sub}</span>` : ""}</div>`;
+}
+function hrow(title, subline, value, right, rightColor) {
+  return `<div class="hcard"><div class="hcard-left"><span class="hcard-ticker">${title}</span><span class="hcard-name">${subline}</span></div><div class="hcard-right"><span class="hcard-val">${value}</span>${right ? `<span class="hcard-pct" style="color:${rightColor}">${right}</span>` : ""}</div></div>`;
+}
+// Only what the row itself doesn't already show: cost, exact unrealized, units & price, weight, sub-holdings.
+function detailHtml(k, D, gv) {
+  const P = D.positions;
+  const pctOf = v => D.total_value ? ((v / D.total_value) * 100).toFixed(1) + "%" : "—";
+  const pl = gv.value - gv.cost;
+  const grid = items => `<div class="group-stats">${items.join("")}</div>`;
+  const hold = rows => `<div class="holdings">${rows.join("")}</div>`;
+  const costStat = sub => statBlock("Cost basis", "$" + fmt(gv.cost, 0), sub);
+  const plStat = statBlock("Unrealized", `${sgn(pl)}$${fmt(Math.abs(pl), 0)}`, null, cls(pl));
+  const portStat = statBlock("% of portfolio", pctOf(gv.value));
+  const nowPrice = p => "@ $" + fmt(p.price, p.price >= 1000 ? 0 : 2) + " now";
+  const posRow = (tk, p, who) => hrow(tk, `${who ? who + " · " : ""}${fmt(p.qty, 0)} sh · avg $${fmt(p.avg_cost)}`,
+    "$" + fmt(p.value, 0), `${sgn(p.pl_pct)}${fmt(Math.abs(p.pl_pct))}%`, pctColor(p.pl_pct));
+  switch (k) {
+    case "QQQ": case "SCHD": {
+      const p = P[k];
+      return grid([costStat(`avg $${fmt(p.avg_cost)} / share`), plStat, statBlock("Shares", fmt(p.qty, 0), nowPrice(p)), portStat]);
+    }
+    case "BTC": case "ETH": {
+      const p = P[k];
+      return grid([costStat(`avg $${fmt(p.avg_cost, 0)}`), plStat, statBlock("Holding", `${fmt(p.qty, k === "BTC" ? 4 : 3)} ${k}`, nowPrice(p)), portStat]);
+    }
+    case "Cash": {
+      const l = P.LFTB11;
+      return grid([costStat(), plStat, statBlock("BRL exposure", pctOf(l.value), "of portfolio, via LFTB11"), portStat])
+        + hold([posRow("TAXM", P.TAXM), posRow("LFTB11", l)]);
+    }
+    case "401(k)": {
+      const contrib = (P.VFIFX.contribution || 0) + (P.TRRNX.contribution || 0);
+      return grid([costStat(), plStat, statBlock("Contributions", "$" + fmt(contrib, 0), "total deposited"), portStat])
+        + hold([posRow("VFIFX", P.VFIFX, "Fernando"), posRow("TRRNX", P.TRRNX, "Wife")]);
+    }
+    case "Real Estate": {
+      const re = D.real_estate;
+      const bought = re.purchase_date
+        ? new Date(re.purchase_date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" })
+        : "—";
+      const rateStr = fmt(re.interest_rate, 3).replace(/0+$/, "").replace(/\.$/, "");
+      return grid([
+        statBlock("Market value", "$" + fmt(re.market_value, 0), `${sgn(re.appreciation)}$${fmt(Math.abs(re.appreciation), 0)} vs purchase`, cls(re.appreciation)),
+        statBlock("Cash invested", "$" + fmt(re.cash_invested, 0), "DP · closing · remodel"),
+        statBlock("Mortgage", "$" + fmt(re.mortgage_balance, 0), `${fmt(re.ltv_pct, 1)}% LTV`),
+        portStat
+      ]) + hold([
+        hrow("All-in cost", `Bought ${bought} · $${fmt(re.purchase_price, 0)} + costs`, "$" + fmt(re.all_in_cost, 0),
+          `${sgn(re.vs_all_in)}$${fmt(Math.abs(re.vs_all_in), 0)} vs market`, pctColor(re.vs_all_in)),
+        hrow("Down payment", `Closing $${fmt(re.closing_cost, 0)} · remodel $${fmt(re.remodeling_cost, 0)}`, "$" + fmt(re.down_payment, 0)),
+        hrow("Loan", `${rateStr}% · ${re.term_label} · $${fmt(re.monthly_payment, 0)}/mo P&amp;I`, "$" + fmt(re.original_loan, 0), "originated", "var(--text-3)"),
+        hrow("Paid down", `${re.payments_made} payment${re.payments_made === 1 ? "" : "s"} · $${fmt(re.interest_paid, 0)} interest`, "$" + fmt(re.principal_paid, 0), "principal", "var(--text-3)")
+      ]);
+    }
+  }
+  return "";
+}
+
+// ============================================================
 // RENDER
 // ============================================================
 let perfChart = null;
+let currentTf = "YTD";   // YTD stays the default timeframe
 function render(D) {
   const tv = split(D.total_value);
   $("totalValue").innerHTML = `$${tv.int}<span class="cents">.${tv.dec}</span>`;
@@ -969,16 +1064,18 @@ function render(D) {
   $("ytdEnd2025").innerHTML = `$${fmt(end2025, 0)}`;
   $("ytdChange").innerHTML = `<span style="color:${ytdChg >= 0 ? 'var(--up)' : 'var(--down)'}">${sgn(ytdPct)}${fmt(ytdPct)}%</span><span class="sub">${sgn(ytdChg)}$${fmt(Math.abs(ytdChg), 0)}</span>`;
 
-  // Quick Overview card (above Allocation, below Total)
+  // Quick Overview: one tappable row per asset class. Tapping opens that class's details inline
+  // (this replaced the separate per-asset cards, which repeated the same numbers).
   const qList = $("quickList");
   qList.innerHTML = "";
+  const P = D.positions;
   const groupVals = {
-    QQQ:     { value: D.allocation.QQQ,     cost: D.positions.QQQ.cost },
-    SCHD:    { value: D.allocation.SCHD,    cost: D.positions.SCHD.cost },
-    BTC:     { value: D.allocation.BTC,     cost: D.positions.BTC.cost },
-    ETH:     { value: D.allocation.ETH,     cost: D.positions.ETH.cost },
-    Cash:    { value: D.allocation.Cash,    cost: D.positions.TAXM.cost + D.positions.LFTB11.cost },
-    "401(k)":{ value: D.allocation["401(k)"], cost: D.positions.VFIFX.cost + D.positions.TRRNX.cost }
+    QQQ:     { value: D.allocation.QQQ,     cost: P.QQQ.cost },
+    SCHD:    { value: D.allocation.SCHD,    cost: P.SCHD.cost },
+    BTC:     { value: D.allocation.BTC,     cost: P.BTC.cost },
+    ETH:     { value: D.allocation.ETH,     cost: P.ETH.cost },
+    Cash:    { value: D.allocation.Cash,    cost: P.TAXM.cost + P.LFTB11.cost },
+    "401(k)":{ value: D.allocation["401(k)"], cost: P.VFIFX.cost + P.TRRNX.cost }
   };
   if (D.real_estate) {
     groupVals["Real Estate"] = { value: D.real_estate.equity, cost: D.real_estate.cash_invested };
@@ -986,6 +1083,7 @@ function render(D) {
   const QUICK_ORDER = D.real_estate
     ? ["QQQ","SCHD","BTC","ETH","Cash","401(k)","Real Estate"]
     : ["QQQ","SCHD","BTC","ETH","Cash","401(k)"];
+  if (openGroup && !QUICK_ORDER.includes(openGroup)) openGroup = null;
   QUICK_ORDER.forEach(k => {
     const g = GROUPS[k]; const gv = groupVals[k];
     const allTimePl = gv.value - gv.cost;
@@ -999,15 +1097,32 @@ function render(D) {
     const ytdCls = ytdChg >= 0 ? "up" : "down";
     const allTimeStr = `${sgn(allTimePct)}${fmt(Math.abs(allTimePct), 1)}%<span class="qp-sub">${sgn(allTimePl)}${fmtK(Math.abs(allTimePl))}</span>`;
     const ytdStr = end25 ? `${sgn(ytdPct)}${fmt(Math.abs(ytdPct), 1)}%<span class="qp-sub">${sgn(ytdChg)}${fmtK(Math.abs(ytdChg))}</span>` : `<span style="color:var(--text-3)">—</span>`;
+    // Most of "Cash" is LFTB11, a Brazilian-real fund — say so right on the row.
+    const sub = (k === "Cash" && P.LFTB11 && P.LFTB11.value > 0) ? `<span class="qn-sub">${fmtK(P.LFTB11.value)} in BRL</span>` : "";
+    const isOpen = openGroup === k;
     const row = document.createElement("div");
-    row.className = "quick-row";
+    row.className = "quick-row tap" + (isOpen ? " open" : "");
+    row.dataset.k = k;
+    row.setAttribute("role", "button");
+    row.setAttribute("tabindex", "0");
+    row.setAttribute("aria-expanded", isOpen ? "true" : "false");
     row.innerHTML = `
-      <div class="quick-name"><span class="swatch-q" style="background:${g.color}"></span><span>${g.short || g.title}</span></div>
+      <div class="quick-name"><span class="swatch-q" style="background:${g.color}"></span><span class="qn"><span class="qn-t">${g.short || g.title}</span>${sub}</span><span class="chev"></span></div>
       <div class="quick-val">${fmtK(gv.value)}</div>
       <div class="quick-pct ${allCls}">${allTimeStr}</div>
       <div class="quick-pct ${ytdCls}">${ytdStr}</div>`;
     qList.appendChild(row);
+    const panel = document.createElement("div");
+    panel.className = "qdetail" + (isOpen ? "" : " hidden");
+    panel.dataset.k = k;
+    panel.style.setProperty("--group-color", g.color);
+    panel.innerHTML = detailHtml(k, D, gv);
+    qList.appendChild(panel);
   });
+  qList.onclick = e => { const r = e.target.closest(".quick-row.tap"); if (r) toggleGroup(r.dataset.k); };
+  qList.onkeydown = e => {
+    if ((e.key === "Enter" || e.key === " ") && e.target.classList && e.target.classList.contains("tap")) { e.preventDefault(); toggleGroup(e.target.dataset.k); }
+  };
   // S&P 500 benchmark row — YTD-only reference for whether it's a good or bad year overall
   const spxYtd = D.sp500_ytd_pct || 0;
   const spxCls = spxYtd >= 0 ? "up" : "down";
@@ -1052,12 +1167,11 @@ function render(D) {
     const pct = ((seg.value / allocTotal) * 100).toFixed(1);
     const row = document.createElement("div");
     row.className = "legend-row";
-    row.innerHTML = `<span class="legend-name"><span class="swatch" style="background:${seg.color}"></span>${seg.label}</span><span class="legend-pct">${pct}%</span>`;
+    row.innerHTML = `<span class="legend-name"><span class="swatch" style="background:${seg.color}"></span>${(GROUPS[seg.label] && GROUPS[seg.label].short) || seg.label}</span><span class="legend-pct">${pct}%</span>`;
     legendEl.appendChild(row);
   });
 
   // Portfolio Value over time ($ — actual value, not rebased)
-  const ctx = $("perfChart").getContext("2d");
   function tfSlice(series, tf) {
     if (tf === "YTD") {
       const idx = series.findIndex(h => h.date >= "2025-12-31");
@@ -1081,6 +1195,25 @@ function render(D) {
     $("cl-port-label").textContent = "Now";
     $("cl-port-change").innerHTML = `${sgn(change)}$${fmt(Math.abs(change), 0)} <span style="opacity:.6">(${sgn(changePct)}${fmt(Math.abs(changePct), 1)}%)</span>`;
     $("cl-port-change").style.color = change >= 0 ? "var(--up)" : "var(--down)";
+    // On YTD, split the value change: market = the price-only YTD return in the hero card;
+    // the rest is money added/withdrawn during the year (contributions, trades, the house).
+    const splitEl = $("cl-split");
+    if (tf === "YTD" && D.end_2025_value && port[0].date === "2025-12-31") {
+      const market = (D.ytd_priced_total || 0) - D.end_2025_value;
+      const other = change - market;
+      splitEl.innerHTML = `Market <b style="color:${pctColor(market)}">${sgn(market)}$${fmt(Math.abs(market), 0)}</b>`
+        + ` · money in/out &amp; house <b>${sgn(other)}$${fmt(Math.abs(other), 0)}</b>`;
+      splitEl.classList.remove("hidden");
+    } else {
+      splitEl.classList.add("hidden");
+    }
+    // If the chart library didn't load (CDN down or blocked), keep every number on screen and skip the chart.
+    const canvas = $("perfChart");
+    if (typeof Chart === "undefined" || !canvas) {
+      if (canvas) canvas.parentElement.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-3)">Chart unavailable right now</div>';
+      return;
+    }
+    const ctx = canvas.getContext("2d");
     const grad = ctx.createLinearGradient(0, 0, 0, 200);
     grad.addColorStop(0, "rgba(224,120,86,0.22)");
     grad.addColorStop(1, "rgba(224,120,86,0)");
@@ -1090,7 +1223,7 @@ function render(D) {
       data: {
         labels: port.map(p => p.date),
         datasets: [
-          { label: "Portfolio Value", data: port.map(p => p.value), borderColor: "#E07856", borderWidth: 2.2, backgroundColor: grad, fill: true, tension: 0.35,
+          { label: "Portfolio Value", data: port.map(p => p.value), borderColor: "#E07856", borderWidth: 2.2, backgroundColor: grad, fill: true, cubicInterpolationMode: "monotone",
             pointRadius: port.map((p, i) => (p.live && i === port.length - 1) ? 3.5 : 0),
             pointBackgroundColor: "#E07856", pointBorderColor: "#fff", pointBorderWidth: 2,
             pointHoverRadius: 5, pointHoverBackgroundColor: "#E07856", pointHoverBorderColor: "#fff", pointHoverBorderWidth: 2 }
@@ -1119,142 +1252,16 @@ function render(D) {
       }
     });
   }
-  drawChart("YTD");
+  // Redraw in whichever timeframe is selected (a refresh used to snap back to YTD while
+  // another button stayed highlighted).
+  drawChart(currentTf);
   $("timeframe").onclick = e => {
     const btn = e.target.closest(".tf-btn"); if (!btn) return;
     $("timeframe").querySelectorAll(".tf-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
-    drawChart(btn.dataset.tf);
+    currentTf = btn.dataset.tf;
+    drawChart(currentTf);
   };
-
-  // Group cards
-  function pctOf(v) { return ((v / D.total_value) * 100).toFixed(1) + "%"; }
-  function holdingItem(tk, p, opts = {}) {
-    const valStr = "$" + fmt(p.value, 0);
-    const pctStr = (p.pl_pct !== undefined) ? `<span class="hcard-pct" style="color:${p.pl_pct >= 0 ? 'var(--up)' : 'var(--down)'}">${sgn(p.pl_pct)}${fmt(p.pl_pct)}%</span>` : "";
-    const subline = opts.subline || `${fmt(p.qty, p.qty < 1 ? 4 : 0)} sh · avg $${fmt(p.avg_cost || p.price)}`;
-    return `<div class="hcard"><div class="hcard-left"><span class="hcard-ticker">${tk}</span><span class="hcard-name">${subline}</span></div><div class="hcard-right"><span class="hcard-val">${valStr}</span>${pctStr}</div></div>`;
-  }
-  function statBlock(label, value, sub, klass) {
-    return `<div class="stat"><span class="stat-label">${label}</span><span class="stat-val ${klass||''}">${value}</span>${sub ? `<span class="stat-sub">${sub}</span>` : ''}</div>`;
-  }
-  function groupCard(key, blocks, holdings) {
-    const g = GROUPS[key];
-    return `<div class="group" style="--group-color:${g.color};--group-soft:${g.soft}">
-      <div class="group-head">
-        <div><div class="group-tag">${g.title}</div><div class="group-subtitle">${blocks.subtitle || g.subtitle}</div></div>
-        <div><div class="group-value">${blocks.value}</div><div class="group-pct-row"><span class="pill ${blocks.pl >= 0 ? 'pill-up' : 'pill-down'}">${sgn(blocks.plPct)}${fmt(blocks.plPct)}%</span></div></div>
-      </div>
-      <div class="group-stats">
-        ${statBlock("Cost Basis", "$" + fmt(blocks.cost, 0))}
-        ${statBlock("Unrealized", `${sgn(blocks.pl)}$${fmt(Math.abs(blocks.pl), 0)}`, null, cls(blocks.pl))}
-        ${statBlock("% of Portfolio", pctOf(blocks.totalValue))}
-        ${blocks.extraStat || statBlock("Positions", blocks.posCount || "1")}
-      </div>
-      <div class="holdings">${holdings}</div>
-    </div>`;
-  }
-
-  const groupsEl = $("groups"); groupsEl.innerHTML = "";
-  const P = D.positions;
-  // QQQ
-  if (P.QQQ && P.QQQ.qty > 0) { const p = P.QQQ; const s = split(p.value);
-    groupsEl.innerHTML += groupCard("QQQ", { value: `$${s.int}<span class="cents">.${s.dec}</span>`, pl: p.pl, plPct: p.pl_pct, cost: p.cost, totalValue: p.value, posCount: 1, extraStat: statBlock("Shares", fmt(p.qty, 0), "@ $" + fmt(p.avg_cost)) }, holdingItem("QQQ", p)); }
-  // SCHD
-  if (P.SCHD && P.SCHD.qty > 0) { const p = P.SCHD; const s = split(p.value);
-    groupsEl.innerHTML += groupCard("SCHD", { value: `$${s.int}<span class="cents">.${s.dec}</span>`, pl: p.pl, plPct: p.pl_pct, cost: p.cost, totalValue: p.value, posCount: 1, extraStat: statBlock("Shares", fmt(p.qty, 0), "@ $" + fmt(p.avg_cost)) }, holdingItem("SCHD", p)); }
-  // Bitcoin
-  if (P.BTC && P.BTC.qty > 0) {
-    const b = P.BTC; const s = split(b.value);
-    const ytdNow = (D.ytd_priced_by_group && D.ytd_priced_by_group.BTC) || 0;
-    const end25 = (D.end_2025_by_group && D.end_2025_by_group.BTC) || 0;
-    const ytdPctB = end25 ? ((ytdNow - end25) / end25) * 100 : null;
-    groupsEl.innerHTML += groupCard("BTC", {
-      value: `$${s.int}<span class="cents">.${s.dec}</span>`, pl: b.pl, plPct: b.pl_pct, cost: b.cost, totalValue: b.value, posCount: 1,
-      subtitle: `BTC · $${fmt(b.price, 0)} now`,
-      extraStat: ytdPctB === null
-        ? statBlock("Price", "$" + fmt(b.price, 0), "live")
-        : statBlock("YTD (price)", `${sgn(ytdPctB)}${fmt(Math.abs(ytdPctB), 1)}%`, "same coins since Dec 31", cls(ytdPctB))
-    }, holdingItem("BTC", b, { subline: `${fmt(b.qty, 4)} BTC · avg $${fmt(b.avg_cost, 0)}` }));
-  }
-  // Ethereum
-  if (P.ETH && P.ETH.qty > 0) {
-    const e = P.ETH; const s = split(e.value);
-    const ytdNow = (D.ytd_priced_by_group && D.ytd_priced_by_group.ETH) || 0;
-    const end25 = (D.end_2025_by_group && D.end_2025_by_group.ETH) || 0;
-    const ytdPctE = end25 ? ((ytdNow - end25) / end25) * 100 : null;
-    groupsEl.innerHTML += groupCard("ETH", {
-      value: `$${s.int}<span class="cents">.${s.dec}</span>`, pl: e.pl, plPct: e.pl_pct, cost: e.cost, totalValue: e.value, posCount: 1,
-      subtitle: `ETH · $${fmt(e.price, 0)} now`,
-      extraStat: ytdPctE === null
-        ? statBlock("Price", "$" + fmt(e.price, 0), "live")
-        : statBlock("YTD (price)", `${sgn(ytdPctE)}${fmt(Math.abs(ytdPctE), 1)}%`, "same coins since Dec 31", cls(ytdPctE))
-    }, holdingItem("ETH", e, { subline: `${fmt(e.qty, 3)} ETH · avg $${fmt(e.avg_cost, 0)}` }));
-  }
-  // Cash
-  if (P.TAXM && P.LFTB11) {
-    const t = P.TAXM, l = P.LFTB11; const total = t.value + l.value, cost = t.cost + l.cost, pl = total - cost, plPct = cost ? (pl / cost) * 100 : 0; const s = split(total);
-    groupsEl.innerHTML += groupCard("Cash", { value: `$${s.int}<span class="cents">.${s.dec}</span>`, pl, plPct, cost, totalValue: total, posCount: 2, extraStat: statBlock("Positions", "2", "TAXM + LFTB11") }, holdingItem("TAXM", t, { subline: `${fmt(t.qty, 0)} sh · @ $${fmt(t.avg_cost)}` }) + holdingItem("LFTB11", l, { subline: `${fmt(l.qty, 0)} sh · @ $${fmt(l.avg_cost)}` }));
-  }
-  // 401(k)
-  if (P.VFIFX && P.TRRNX) {
-    const v = P.VFIFX, w = P.TRRNX; const total = v.value + w.value, cost = v.cost + w.cost, contrib = (v.contribution || 0) + (w.contribution || 0), pl = total - cost, plPct = cost ? (pl / cost) * 100 : 0; const s = split(total);
-    groupsEl.innerHTML += groupCard("401(k)", { value: `$${s.int}<span class="cents">.${s.dec}</span>`, pl, plPct, cost, totalValue: total, posCount: 2, extraStat: statBlock("Contributions", "$" + fmt(contrib, 0), "Total deposited") }, holdingItem("VFIFX", v, { subline: `Fernando · ${fmt(v.qty, 0)} sh` }) + holdingItem("TRRNX", w, { subline: `Wife · ${fmt(w.qty, 0)} sh` }));
-  }
-
-  // Real Estate (custom card — no shares/holdings, leveraged + illiquid)
-  if (D.real_estate) {
-    const re = D.real_estate;
-    const g = GROUPS["Real Estate"];
-    const eq = split(re.equity);
-    const eqHtml = `$${eq.int}<span class="cents">.${eq.dec}</span>`;
-    const gainCls = re.gain_vs_cash >= 0 ? "up" : "down";
-    const apprCls = re.appreciation >= 0 ? "up" : "down";
-    const apprColor = re.appreciation >= 0 ? "var(--up)" : "var(--down)";
-    const allInCls = re.vs_all_in >= 0 ? "up" : "down";
-    const allInColor = re.vs_all_in >= 0 ? "var(--up)" : "var(--down)";
-    const purchaseLabel = re.purchase_date
-      ? new Date(re.purchase_date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" })
-      : "—";
-    const rateStr = fmt(re.interest_rate, 3).replace(/0+$/, "").replace(/\.$/, "");
-    groupsEl.innerHTML += `<div class="group" style="--group-color:${g.color};--group-soft:${g.soft}">
-      <div class="group-head">
-        <div><div class="group-tag">${g.title}</div><div class="group-subtitle">Equity · bought ${purchaseLabel}</div></div>
-        <div>
-          <div class="group-value">${eqHtml}</div>
-          <div class="group-pct-row"><span class="pill ${re.gain_vs_cash >= 0 ? 'pill-up' : 'pill-down'}">${sgn(re.gain_pct_vs_cash)}${fmt(Math.abs(re.gain_pct_vs_cash), 1)}%</span></div>
-        </div>
-      </div>
-      <div class="group-stats">
-        ${statBlock("Market Value", "$" + fmt(re.market_value, 0), `${sgn(re.appreciation)}$${fmt(Math.abs(re.appreciation), 0)} vs purchase`, apprCls)}
-        ${statBlock("Cash Invested", "$" + fmt(re.cash_invested, 0), "DP · closing · remodel")}
-        ${statBlock("Mortgage", "$" + fmt(re.mortgage_balance, 0), `${fmt(re.ltv_pct, 1)}% LTV`)}
-        ${statBlock("% of Portfolio", pctOf(re.equity))}
-      </div>
-      <div class="holdings">
-        <div class="hcard">
-          <div class="hcard-left"><span class="hcard-ticker">Equity Build</span><span class="hcard-name">Down payment + principal + appreciation</span></div>
-          <div class="hcard-right"><span class="hcard-val">$${fmt(re.equity, 0)}</span><span class="hcard-pct" style="color:${apprColor}">${sgn(re.appreciation)}$${fmt(Math.abs(re.appreciation), 0)} appr.</span></div>
-        </div>
-        <div class="hcard">
-          <div class="hcard-left"><span class="hcard-ticker">All-in Cost</span><span class="hcard-name">Purchase $${fmt(re.purchase_price, 0)} + closing + remodel</span></div>
-          <div class="hcard-right"><span class="hcard-val">$${fmt(re.all_in_cost, 0)}</span><span class="hcard-pct" style="color:${allInColor}">${sgn(re.vs_all_in)}$${fmt(Math.abs(re.vs_all_in), 0)} vs market</span></div>
-        </div>
-        <div class="hcard">
-          <div class="hcard-left"><span class="hcard-ticker">Down Payment</span><span class="hcard-name">Closing $${fmt(re.closing_cost, 0)} · remodel $${fmt(re.remodeling_cost, 0)}</span></div>
-          <div class="hcard-right"><span class="hcard-val">$${fmt(re.down_payment, 0)}</span></div>
-        </div>
-        <div class="hcard">
-          <div class="hcard-left"><span class="hcard-ticker">Loan</span><span class="hcard-name">${rateStr}% · ${re.term_label} · $${fmt(re.monthly_payment, 0)}/mo P&amp;I</span></div>
-          <div class="hcard-right"><span class="hcard-val">$${fmt(re.original_loan, 0)}</span><span class="hcard-pct" style="color:var(--text-3)">originated</span></div>
-        </div>
-        <div class="hcard">
-          <div class="hcard-left"><span class="hcard-ticker">Paid Down</span><span class="hcard-name">${re.payments_made} payment${re.payments_made === 1 ? "" : "s"} · $${fmt(re.interest_paid, 0)} interest</span></div>
-          <div class="hcard-right"><span class="hcard-val">$${fmt(re.principal_paid, 0)}</span><span class="hcard-pct" style="color:var(--text-3)">principal</span></div>
-        </div>
-      </div>
-    </div>`;
-  }
 
 }
 
@@ -1272,13 +1279,14 @@ async function initLoad() {
       render(D);
       showState("ready");
       const age = cacheAge();
-      const min = age != null ? Math.round(age / 60000) : null;
-      setLiveStatus(min != null && min > 60 ? "stale" : "normal", min == null ? "Cached" : (min < 1 ? "Just now" : min + "m ago"));
+      setLiveStatus(age != null && age > 60 * 60000 ? "stale" : "normal", age == null ? "Cached" : ageLabel(age));
     } catch (e) { console.warn("Cached compute failed:", e); }
   } else {
     showState("loading");
   }
 
+  let releaseLock;
+  refreshing = new Promise(r => { releaseLock = r; });   // so a resume/refresh doesn't fire a second fetch meanwhile
   try {
     const raw = await fetchData();
     saveCache(raw);
@@ -1294,26 +1302,63 @@ async function initLoad() {
     } else {
       showError("Couldn't load or compute portfolio data. " + err.message, err.stack || err.message);
     }
+  } finally {
+    refreshing = null;
+    releaseLock();
   }
 }
 
-$("refreshBtn").addEventListener("click", async () => {
+// One refresh at a time, whether it comes from the button or from reopening the app.
+let refreshing = null;
+function refresh() {
+  if (refreshing) return refreshing;
   const btn = $("refreshBtn"); btn.classList.add("spinning");
   setLiveStatus("normal", "Refreshing…");
-  try {
-    const raw = await fetchData();
-    saveCache(raw);
-    const D = compute(raw);
-    render(D);
-    showState("ready");
-    setLiveStatus("normal", "Just now");
-  } catch (err) {
-    if (err instanceof KeyError) { askForKey(err.reason); return; }
-    setLiveStatus("error", "Failed");
-    if (!loadCache()) showError("Refresh failed. " + err.message, err.stack);
-  } finally {
-    setTimeout(() => btn.classList.remove("spinning"), 400);
-  }
+  refreshing = (async () => {
+    try {
+      const raw = await fetchData();
+      saveCache(raw);
+      const D = compute(raw);
+      render(D);
+      showState("ready");
+      setLiveStatus("normal", "Just now");
+    } catch (err) {
+      if (err instanceof KeyError) { askForKey(err.reason); return; }
+      setLiveStatus("error", "Failed");
+      if (!loadCache()) showError("Refresh failed. " + err.message, err.stack);
+    } finally {
+      setTimeout(() => btn.classList.remove("spinning"), 400);
+      refreshing = null;
+    }
+  })();
+  return refreshing;
+}
+$("refreshBtn").addEventListener("click", () => refresh());
+
+// The live badge shows the real age of the data ("12m ago") instead of a "Just now" that never changes.
+function ageLabel(ms) {
+  const min = Math.round(ms / 60000);
+  if (min < 1) return "Just now";
+  if (min < 60) return min + "m ago";
+  const h = Math.round(min / 60);
+  return h < 48 ? h + "h ago" : Math.round(h / 24) + "d ago";
+}
+function tickLiveLabel() {
+  if (refreshing || !$("keyState").classList.contains("hidden") || $("content").classList.contains("hidden")) return;
+  if ($("liveDot").classList.contains("error")) return;   // keep "Offline" / "Failed" visible
+  const age = cacheAge();
+  if (age == null) return;
+  setLiveStatus(age > 60 * 60000 ? "stale" : "normal", ageLabel(age));
+}
+setInterval(tickLiveLabel, 30000);
+
+// Reopening the home-screen app resumes the old page without reloading it — fetch fresh data
+// if what's on screen is more than 2 minutes old.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible") return;
+  tickLiveLabel();
+  const age = cacheAge();
+  if (getKey() && !$("content").classList.contains("hidden") && (age == null || age > 2 * 60000)) refresh();
 });
 
 $("keyForm").addEventListener("submit", e => {

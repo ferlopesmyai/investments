@@ -6,7 +6,9 @@ import { chromium } from "playwright";
 const PAGE_PORT = 8811, API_PORT = 8812;
 const html = fs.readFileSync(process.argv[2], "utf8")
   .replace(/const API_URL = "[^"]+";/, `const API_URL = "http://127.0.0.1:${API_PORT}/exec";`)
-  .replace(/https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/Chart\.js\/4\.4\.0\/chart\.umd\.min\.js/, "/chart.js");
+  // Serve Chart.js locally (the CDN is unreachable in CI); drop the CDN tag's integrity pin, which only matches the CDN file.
+  .replace(/<script src="https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/Chart\.js\/[^"]+"[^>]*><\/script>/, '<script src="/chart.js"></script>');
+if (!html.includes('<script src="/chart.js">')) { console.log("FAIL could not swap the Chart.js tag"); process.exit(1); }
 const chartJs = fs.readFileSync("node_modules/chart.js/dist/chart.umd.js");
 
 // ---- Synthetic payload mirroring the real sheet schema (after the new script's filtering) ----
@@ -137,6 +139,99 @@ Object.assign(PAYLOAD, origPayload);
 
 // 9. No "Open API URL" link anywhere, and the key never appears in the page HTML.
 ok(!(await page.content()).includes("Open API URL") && !(await page.content()).includes("anything\""), "9. no API link; key not rendered into the page");
+
+// ---------------- Layout & interaction (state: unlocked with key "anything", MODE "new") ----------------
+await page.reload(); await waitFor("content");
+await page.waitForFunction(() => document.getElementById("live-time").textContent === "Just now", null, { timeout: 8000 });
+
+// 10. Per-asset card section is gone; Quick Overview rows are tappable, all closed.
+ok(await page.evaluate(() => !document.getElementById("groups") && document.querySelectorAll(".quick-row.tap").length === 7
+  && [...document.querySelectorAll(".qdetail")].every(p => p.classList.contains("hidden"))), "10. asset cards removed; 7 tappable rows, all closed");
+
+// 11. Tap opens one panel at a time; tap again closes.
+const openState = () => page.evaluate(() => ({
+  rows: [...document.querySelectorAll(".quick-row.tap")].filter(r => r.getAttribute("aria-expanded") === "true").map(r => r.dataset.k),
+  panels: [...document.querySelectorAll(".qdetail")].filter(p => !p.classList.contains("hidden")).map(p => p.dataset.k) }));
+await page.click('.quick-row.tap[data-k="QQQ"]');
+let st = await openState();
+ok(st.rows.join() === "QQQ" && st.panels.join() === "QQQ", "11. tap Growth opens only its panel");
+await page.click('.quick-row.tap[data-k="Cash"]');
+st = await openState();
+ok(st.rows.join() === "Cash" && st.panels.join() === "Cash", "11. tap Cash closes Growth, opens Cash");
+const cashTxt = await page.textContent('.qdetail[data-k="Cash"]');
+ok(/BRL exposure/.test(cashTxt) && /TAXM/.test(cashTxt) && /LFTB11/.test(cashTxt), "11. Cash panel shows BRL exposure and TAXM/LFTB11 split");
+ok(/\$\d+K in BRL/.test(await page.textContent('.quick-row.tap[data-k="Cash"]')), "11. Cash row itself shows the BRL-fund amount");
+await page.keyboard.press("Tab"); // keyboard: Enter on a focused row toggles too
+await page.focus('.quick-row.tap[data-k="Real Estate"]'); await page.keyboard.press("Enter");
+st = await openState();
+ok(st.panels.join() === "Real Estate" && /LTV/.test(await page.textContent('.qdetail[data-k="Real Estate"]')), "11. Enter on Real Estate opens its panel (mortgage/LTV inside)");
+await page.click('.quick-row.tap[data-k="Real Estate"]');
+st = await openState();
+ok(st.panels.length === 0, "11. tapping the open row closes it");
+
+// 12. Open row and chosen timeframe both survive a data refresh.
+await page.click('.quick-row.tap[data-k="401(k)"]');
+await page.click('.tf-btn[data-tf="1Y"]');
+ok(await page.evaluate(() => document.getElementById("cl-split").classList.contains("hidden")), "12. YTD split hidden on 1Y");
+const hitsBefore = hits.length;
+await page.click("#refreshBtn"); await page.waitForFunction(() => document.getElementById("live-time").textContent === "Just now", null, { timeout: 8000 });
+st = await openState();
+const tfAfter = await page.evaluate(() => ({ active: document.querySelector(".tf-btn.active").dataset.tf, n: Chart.getChart(document.getElementById("perfChart")).data.labels.length }));
+ok(hits.length > hitsBefore && st.panels.join() === "401(k)" && tfAfter.active === "1Y" && tfAfter.n === 13, `12. after refresh: 401(k) still open, 1Y still drawn (${tfAfter.n} points)`);
+
+// 13. YTD split: market + money in/out = value change, and market = hero YTD amount.
+await page.click('.tf-btn[data-tf="YTD"]');
+const split = await page.evaluate(() => {
+  const num = s => (s.trim().startsWith("−") ? -1 : 1) * parseFloat(s.replace(/[^\d.]/g, ""));
+  const b = document.querySelectorAll("#cl-split b");
+  return { visible: !document.getElementById("cl-split").classList.contains("hidden"),
+    market: num(b[0].textContent), other: num(b[1].textContent),
+    change: num(document.getElementById("cl-port-change").childNodes[0].textContent),
+    hero: num(document.querySelector("#ytdChange .sub").textContent) };
+});
+ok(split.visible && Math.abs(split.market + split.other - split.change) <= 1 && Math.abs(split.market - split.hero) <= 1,
+  `13. YTD split adds up (market ${split.market} + other ${split.other} = change ${split.change}; hero ${split.hero})`);
+
+// 14. No truncated names or numbers in Quick Overview at common iPhone widths.
+for (const w of [375, 393, 402, 430]) {
+  await page.setViewportSize({ width: w, height: 852 }); await page.waitForTimeout(150);
+  const bad = await page.evaluate(() => [...document.querySelectorAll(".qn-t, .qn-sub, .quick-name > span:not(.swatch-q):not(.qn):not(.chev), .quick-val, .quick-pct")]
+    .filter(el => el.scrollWidth > el.clientWidth + 0.5).map(el => el.textContent.trim().slice(0, 14)));
+  ok(bad.length === 0, `14. ${w}px: nothing truncated` + (bad.length ? " — " + bad.join(", ") : ""));
+  if (w === 375) await page.screenshot({ path: "/tmp/pwtest/quick-375.png", fullPage: true });
+}
+await page.setViewportSize({ width: 393, height: 852 });
+
+// 15. Allocation legend uses the same names as Quick Overview; home-screen icon declared.
+const legend = await page.textContent("#legend");
+ok(/Growth/.test(legend) && /Dividends/.test(legend) && !/\bQQQ\b|\bSCHD\b/.test(legend), "15. allocation legend uses Growth/Dividends names");
+ok(await page.evaluate(() => !!document.querySelector('link[rel="apple-touch-icon"]')), "15. apple-touch-icon declared");
+
+// 16. Live badge shows the real age and turns amber after an hour.
+await page.evaluate(() => { localStorage.setItem("portfolio_raw_ts_v2", Date.now() - 5 * 60000); tickLiveLabel(); });
+ok((await page.textContent("#live-time")) === "5m ago", "16. badge shows 5m ago");
+await page.evaluate(() => { localStorage.setItem("portfolio_raw_ts_v2", Date.now() - 125 * 60000); tickLiveLabel(); });
+ok((await page.textContent("#live-time")) === "2h ago" && await page.evaluate(() => document.getElementById("liveDot").classList.contains("stale")), "16. badge shows 2h ago in amber");
+
+// 17. Reopening the app refreshes stale data, but not fresh data.
+let h0 = hits.length;
+await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+await page.waitForFunction(() => document.getElementById("live-time").textContent === "Just now", null, { timeout: 8000 });
+ok(hits.length === h0 + 1, "17. resume with 2h-old data → one refresh");
+h0 = hits.length;
+await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+await page.waitForTimeout(500);
+ok(hits.length === h0, "17. resume with fresh data → no extra request");
+
+// 18. If Chart.js fails to load, the numbers still render.
+const p2 = await ctx.newPage();
+const p2Errors = []; p2.on("pageerror", e => p2Errors.push(String(e)));
+await p2.route("**/chart.js", r => r.abort());
+await p2.goto(URL); await p2.waitForFunction(() => !document.getElementById("content").classList.contains("hidden"), null, { timeout: 8000 });
+await p2.waitForFunction(() => document.getElementById("live-time").textContent === "Just now", null, { timeout: 8000 });
+const t18 = await p2.evaluate(() => document.body.innerText);
+ok(/Chart unavailable/.test(t18) && /\$\d/.test(await p2.textContent("#totalValue")) && p2Errors.length === 0, "18. no chart library → numbers still shown, no errors");
+await p2.close();
 
 ok(pageErrors.length === 0, "no uncaught page errors" + (pageErrors.length ? ": " + pageErrors.join(" | ") : ""));
 await browser.close(); api.close(); site.close();
