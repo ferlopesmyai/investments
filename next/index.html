@@ -68,14 +68,6 @@ body{background:var(--bg);color:var(--text);font-family:"Plus Jakarta Sans",-app
 .hero-value{font-family:"Inter",sans-serif;font-size:clamp(40px,11vw,56px);font-weight:700;letter-spacing:-.035em;line-height:1;color:var(--text);font-feature-settings:"tnum"}
 .hero-value .cents{font-size:.5em;color:var(--text-3);font-weight:600}
 .hero-brl{font-family:"Inter",sans-serif;font-size:13px;font-weight:600;color:var(--text-3);margin-top:8px;font-variant-numeric:tabular-nums;letter-spacing:.01em}
-.hero-row{display:flex;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap}
-.pill{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:100px;font-size:12px;font-weight:700;font-family:"Inter",sans-serif}
-.pill-up{background:var(--up-soft);color:var(--up)}
-.pill-down{background:var(--down-soft);color:var(--down)}
-.pill-arrow{font-size:10px}
-.hero-pl-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);margin-top:18px;margin-bottom:8px}
-.hero-pl-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.hero-pl-amount{font-family:"Inter",sans-serif;font-size:15px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
 .hero-divider{height:1px;background:var(--border);margin:18px 0 16px}
 .hero-meta{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .meta-item{display:flex;flex-direction:column;gap:2px}
@@ -85,9 +77,9 @@ body{background:var(--bg);color:var(--text);font-family:"Plus Jakarta Sans",-app
 .donut-wrap{display:flex;align-items:center;gap:18px}
 .donut-canvas{width:110px;height:110px;flex-shrink:0;position:relative}
 .donut-canvas canvas{display:block;width:110px!important;height:110px!important}
-.quick-grid-head{display:grid;grid-template-columns:minmax(0,1fr) 60px 54px 54px;gap:6px;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:0 2px 8px;border-bottom:1px solid var(--border-2)}
+.quick-grid-head{display:grid;grid-template-columns:minmax(0,1fr) 76px 72px;gap:6px;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:0 2px 8px;border-bottom:1px solid var(--border-2)}
 .quick-grid-head .qh-r{text-align:right}
-.quick-row{display:grid;grid-template-columns:minmax(0,1fr) 60px 54px 54px;gap:6px;align-items:center;padding:11px 2px;border-bottom:1px solid var(--border-2)}
+.quick-row{display:grid;grid-template-columns:minmax(0,1fr) 76px 72px;gap:6px;align-items:center;padding:11px 2px;border-bottom:1px solid var(--border-2)}
 .quick-row:last-child{border-bottom:none}
 .quick-row.tap{cursor:pointer;-webkit-tap-highlight-color:transparent;border-radius:10px;transition:background .15s}
 .quick-row.tap:active{background:var(--card-soft)}
@@ -218,11 +210,6 @@ footer{text-align:center;font-size:11px;color:rgba(255,255,255,.6);font-weight:5
       <div class="hero-label">Total Portfolio Value</div>
       <div class="hero-value" id="totalValue"></div>
       <div class="hero-brl" id="totalValueBRL"></div>
-      <div class="hero-pl-label">All-time gain</div>
-      <div class="hero-pl-row">
-        <span class="pill" id="pillAll"></span>
-        <span class="hero-pl-amount" id="amtAll"></span>
-      </div>
       <div class="hero-divider"></div>
       <div class="hero-meta">
         <div class="meta-item"><span class="meta-label">Year-End 2025</span><span class="meta-value" id="ytdEnd2025"></span></div>
@@ -244,7 +231,6 @@ footer{text-align:center;font-size:11px;color:rgba(255,255,255,.6);font-weight:5
       <div class="quick-grid-head">
         <div>Asset</div>
         <div class="qh-r">Value</div>
-        <div class="qh-r">All-time</div>
         <div class="qh-r">YTD</div>
       </div>
       <div id="quickList"></div>
@@ -674,10 +660,8 @@ function compute(raw) {
 
   // ---- Aggregates ----
   let total_value = Object.values(positions).reduce((s, p) => s + p.value, 0);
-  let total_cost  = Object.values(positions).reduce((s, p) => s + p.cost, 0);
   if (realEstate) {
     total_value += realEstate.equity;
-    total_cost  += realEstate.cash_invested;
   }
 
   // BTC and ETH are tracked as their own asset classes (split out 2026-09).
@@ -911,9 +895,6 @@ function compute(raw) {
     ytd_flows,
     as_of: localISO(),
     total_value: +total_value.toFixed(2),
-    total_cost: +total_cost.toFixed(2),
-    unrealized_pl: +(total_value - total_cost).toFixed(2),
-    unrealized_pct: total_cost > 0 ? +(((total_value - total_cost) / total_cost) * 100).toFixed(2) : 0,
     end_2025_value,
     end_2025_by_group,
     ytd_priced_by_group,
@@ -1016,7 +997,6 @@ const fmtK = n => { const a = Math.abs(n); if (a >= 1e6) return "$" + (n / 1e6).
 const split = n => { const [i, d] = fmt(n).split("."); return { int: (n < 0 ? "-" : "") + i, dec: d }; };
 const sgn = n => n >= 0 ? "+" : "−";
 const cls = n => n >= 0 ? "up" : "down";
-const arrow = n => n >= 0 ? "↑" : "↓";
 
 const GROUPS = {
   QQQ: { color: "#E07856", soft: "#FBE4DA", title: "Growth", short: "Growth", subtitle: "QQQ — NASDAQ 100" },
@@ -1128,12 +1108,6 @@ function render(D) {
   const ytdChg = (D.ytd_priced_total || 0) - end2025;
   const ytdPct = end2025 ? (ytdChg / end2025) * 100 : 0;
 
-  const pillAll = $("pillAll");
-  pillAll.innerHTML = `<span class="pill-arrow">${arrow(D.unrealized_pct)}</span> ${sgn(D.unrealized_pct)}${fmt(D.unrealized_pct)}%`;
-  pillAll.className = "pill " + (D.unrealized_pct >= 0 ? "pill-up" : "pill-down");
-  const amtAll = $("amtAll");
-  amtAll.textContent = `${sgn(D.unrealized_pl)}$${fmt(Math.abs(D.unrealized_pl), 0)}`;
-  amtAll.style.color = D.unrealized_pl >= 0 ? "var(--up)" : "var(--down)";
   $("ytdEnd2025").innerHTML = `$${fmt(end2025, 0)}`;
   // YTD Return shows the % only (price return on Jan 1 holdings — the figure to compare with the S&P 500).
   // The dollar side of the year lives in "Change this year" below, split into new money vs growth.
@@ -1195,16 +1169,12 @@ function render(D) {
   if (openGroup && !QUICK_ORDER.includes(openGroup)) openGroup = null;
   QUICK_ORDER.forEach(k => {
     const g = GROUPS[k]; const gv = groupVals[k];
-    const allTimePl = gv.value - gv.cost;
-    const allTimePct = gv.cost > 0 ? (allTimePl / gv.cost) * 100 : 0;
     const end25 = (D.end_2025_by_group && D.end_2025_by_group[k]) || 0;
     // Price-only YTD: same end-2025 shares marked to today's prices, so it compares to S&P 500 fairly.
     const ytdNow = (D.ytd_priced_by_group && D.ytd_priced_by_group[k]) || 0;
     const ytdChg = end25 ? ytdNow - end25 : 0;
     const ytdPct = end25 ? (ytdChg / end25) * 100 : 0;
-    const allCls = allTimePl >= 0 ? "up" : "down";
     const ytdCls = ytdChg >= 0 ? "up" : "down";
-    const allTimeStr = `${sgn(allTimePct)}${fmt(Math.abs(allTimePct), 1)}%<span class="qp-sub">${sgn(allTimePl)}${fmtK(Math.abs(allTimePl))}</span>`;
     const ytdStr = end25 ? `${sgn(ytdPct)}${fmt(Math.abs(ytdPct), 1)}%<span class="qp-sub">${sgn(ytdChg)}${fmtK(Math.abs(ytdChg))}</span>` : `<span style="color:var(--text-3)">—</span>`;
     // Most of "Cash" is LFTB11, a Brazilian-real fund — say so right on the row.
     const sub = (k === "Cash" && P.LFTB11 && P.LFTB11.value > 0) ? `<span class="qn-sub">${fmtK(P.LFTB11.value)} in BRL</span>` : "";
@@ -1218,7 +1188,6 @@ function render(D) {
     row.innerHTML = `
       <div class="quick-name"><span class="swatch-q" style="background:${g.color}"></span><span class="qn"><span class="qn-t">${g.short || g.title}</span>${sub}</span><span class="chev"></span></div>
       <div class="quick-val">${fmtK(gv.value)}</div>
-      <div class="quick-pct ${allCls}">${allTimeStr}</div>
       <div class="quick-pct ${ytdCls}">${ytdStr}</div>`;
     qList.appendChild(row);
     const panel = document.createElement("div");
@@ -1244,7 +1213,6 @@ function render(D) {
   spxRow.innerHTML = `
     <div class="quick-name"><span class="swatch-q"></span><span>S&amp;P 500</span></div>
     <div class="quick-val" style="color:var(--text-3)">—</div>
-    <div class="quick-pct" style="color:var(--text-3)">—</div>
     <div class="quick-pct ${spxCls}">${sgn(spxYtd)}${fmt(Math.abs(spxYtd), 1)}%<span class="qp-sub">${spxSub}</span></div>`;
   qList.appendChild(spxRow);
 
