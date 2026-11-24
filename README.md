@@ -1,6 +1,11 @@
 # Portfolio Dashboard
 
-Mobile-first dashboard for the household investment portfolio.
-Pulls live data from the INVESTIMENTS Google Sheet via an Apps Script JSON API and renders allocation, performance vs S&P 500, dividend history, and per-asset cost basis.
+Mobile-first dashboard for the household investment portfolio, served by GitHub Pages at
+https://ferlopesmyai.github.io/investments/
 
-Open `index.html` to view, or visit the GitHub Pages site once Pages is enabled (Settings → Pages → Source: branch `main`, folder `/ (root)`).
+- `index.html` — the whole dashboard (all calculations run in the browser).
+- `apps-script/dashboard-api.gs` — the `doGet`/`doPost` block pasted into the INVESTIMENTS sheet's Apps Script.
+
+The data API is private: it only answers a POST carrying the access key stored in the script's
+**Script Properties → `DASHBOARD_KEY`**. Each device asks for the key once and keeps it locally.
+Changing the property locks every device until the new key is entered. No key or data lives in this repo.

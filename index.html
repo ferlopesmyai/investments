@@ -136,6 +136,13 @@ body{background:var(--bg);color:var(--text);font-family:"Plus Jakarta Sans",-app
 .hcard-val{font-family:"Inter",sans-serif;font-size:14px;font-weight:700;color:var(--text)}
 .hcard-pct{font-family:"Inter",sans-serif;font-size:11px;font-weight:700}
 footer{text-align:center;font-size:11px;color:rgba(255,255,255,.6);font-weight:500;margin-top:24px;letter-spacing:.05em}
+.key-card{border-left:3px solid var(--coral)}
+.key-title{font-size:15px;font-weight:800;color:var(--text);margin-bottom:6px}
+.key-msg{font-size:13px;color:var(--text-2);line-height:1.5;margin-bottom:14px}
+.key-msg.bad{color:var(--down);font-weight:600}
+.key-form{display:flex;gap:8px}
+.key-input{flex:1;min-width:0;font-family:"Inter",monospace;font-size:16px;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card-soft);color:var(--text);letter-spacing:.04em}
+.key-input:focus{outline:2px solid var(--coral-soft);border-color:var(--coral)}
 .hidden{display:none!important}
 </style>
 </head>
@@ -161,6 +168,18 @@ footer{text-align:center;font-size:11px;color:rgba(255,255,255,.6);font-weight:5
   </div>
 
   <div id="errorState" class="hidden"></div>
+
+  <div id="keyState" class="hidden">
+    <div class="card key-card">
+      <div class="key-title">Private dashboard</div>
+      <div class="key-msg" id="keyMsg">Enter your access key to load the portfolio on this device.</div>
+      <form class="key-form" id="keyForm" autocomplete="on">
+        <input type="text" name="username" value="portfolio" autocomplete="username" hidden>
+        <input class="key-input" id="keyInput" type="password" name="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Access key" required>
+        <button class="btn btn-primary" type="submit">Unlock</button>
+      </form>
+    </div>
+  </div>
 
   <div id="content" class="hidden">
 
@@ -230,6 +249,9 @@ footer{text-align:center;font-size:11px;color:rgba(255,255,255,.6);font-weight:5
 const API_URL = "https://script.google.com/macros/s/AKfycbzzEwjW-0GYmolO-6PCMR79HoTpMrOxGshMM7MFpA25HgP-7mHxpH9po__jsGqNhgRvLQ/exec";
 const CACHE_KEY = "portfolio_raw_v2";
 const CACHE_TS_KEY = "portfolio_raw_ts_v2";
+// Access key: typed once per device, kept only in this device's storage — never in this file.
+// The Apps Script checks it against Script Properties → DASHBOARD_KEY.
+const KEY_STORAGE = "portfolio_key_v1";
 
 // ============================================================
 // PARSING UTILITIES
@@ -819,13 +841,52 @@ function compute(raw) {
 // ============================================================
 // FETCH + CACHE
 // ============================================================
+class KeyError extends Error {
+  constructor(reason) { super(reason === "rejected" ? "Access key was rejected" : "No access key on this device"); this.reason = reason; }
+}
+function getKey() { try { return localStorage.getItem(KEY_STORAGE) || ""; } catch { return ""; } }
+function setKey(k) { try { localStorage.setItem(KEY_STORAGE, k); } catch {} }
+function forgetKeyAndData() {
+  try { [KEY_STORAGE, CACHE_KEY, CACHE_TS_KEY].forEach(k => localStorage.removeItem(k)); } catch {}
+}
+
 async function fetchData() {
-  const res = await fetch(API_URL, { method: "GET", redirect: "follow", cache: "no-store" });
-  if (!res.ok) throw new Error("HTTP " + res.status + " " + res.statusText);
-  const text = await res.text();
+  const key = getKey();
+  if (!key) throw new KeyError("missing");
+  // POST with the key in the body (text/plain keeps it a "simple" request: no CORS preflight).
+  let text, viaFallback = false;
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST", redirect: "follow", cache: "no-store",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ k: key })
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status + " " + res.statusText);
+    text = await res.text();
+  } catch (postErr) {
+    // TRANSITION ONLY: until the Apps Script with doPost() is deployed, Google's
+    // "function not found" page isn't readable cross-origin, so the POST fails outright.
+    // Fall back to the old open GET so nothing breaks in between. Remove once the new script is live.
+    let r2;
+    try { r2 = await fetch(API_URL, { method: "GET", redirect: "follow", cache: "no-store" }); }
+    catch { throw postErr; }
+    if (!r2.ok) throw postErr;
+    text = await r2.text();
+    viaFallback = true;
+  }
   let data;
   try { data = JSON.parse(text); }
   catch (e) { throw new Error("Response was not valid JSON. First 300 chars: " + text.slice(0, 300)); }
+  if (data && data.error === "unauthorized") {
+    // Only a real POST answer can reject the key; a fallback GET is always "unauthorized" on the
+    // new script, so treat that as a connection problem and keep the key.
+    if (viaFallback) throw new Error("Couldn't reach the portfolio API. Try again in a moment.");
+    throw new KeyError("rejected");
+  }
+  // Never cache or render something that isn't the portfolio payload.
+  if (!data || typeof data !== "object" || !findSheet(data, "REAL TIME PRICE").length) {
+    throw new Error("Unexpected API response (no REAL TIME PRICE tab).");
+  }
   return data;
 }
 function loadCache() { try { return JSON.parse(localStorage.getItem(CACHE_KEY) || "null"); } catch { return null; } }
@@ -839,6 +900,20 @@ function showState(state) {
   $("loadingState").classList.toggle("hidden", state !== "loading");
   $("content").classList.toggle("hidden", state !== "ready");
   $("errorState").classList.toggle("hidden", state !== "error");
+  $("keyState").classList.toggle("hidden", state !== "key");
+}
+// No key, or a rejected one: drop the key AND the cached portfolio, then ask.
+// (A device whose key was revoked keeps nothing on screen or in storage.)
+function askForKey(reason) {
+  forgetKeyAndData();
+  const msg = $("keyMsg");
+  msg.textContent = reason === "rejected"
+    ? "That key didn't work. Check it and try again."
+    : "Enter your access key to load the portfolio on this device.";
+  msg.classList.toggle("bad", reason === "rejected");
+  $("keyInput").value = "";
+  setLiveStatus("stale", "Locked");
+  showState("key");
 }
 function setLiveStatus(kind, label) {
   const dot = $("liveDot");
@@ -849,10 +924,9 @@ function showError(msg, raw) {
   $("errorState").innerHTML = `
     <div class="error-card">
       <div class="error-title">⚠ Couldn't load portfolio</div>
-      <div class="error-msg">${msg}</div>
+      <div class="error-msg">${escapeHtml(msg)}</div>
       <div class="error-actions">
         <button class="btn btn-primary" onclick="initLoad()">Retry</button>
-        <a class="btn btn-secondary" href="${API_URL}" target="_blank">Open API URL</a>
       </div>
       ${raw ? `<div class="error-debug">${escapeHtml(raw).slice(0, 1500)}</div>` : ""}
     </div>`;
@@ -1206,6 +1280,7 @@ function render(D) {
 // ============================================================
 async function initLoad() {
   setLiveStatus("normal", "Loading…");
+  if (!getKey()) { askForKey("missing"); return; }
 
   const cached = loadCache();
   if (cached) {
@@ -1229,6 +1304,7 @@ async function initLoad() {
     showState("ready");
     setLiveStatus("normal", "Just now");
   } catch (err) {
+    if (err instanceof KeyError) { askForKey(err.reason); return; }
     console.error("Load failed:", err);
     if (cached) {
       setLiveStatus("error", "Offline");
@@ -1249,11 +1325,21 @@ $("refreshBtn").addEventListener("click", async () => {
     showState("ready");
     setLiveStatus("normal", "Just now");
   } catch (err) {
+    if (err instanceof KeyError) { askForKey(err.reason); return; }
     setLiveStatus("error", "Failed");
     if (!loadCache()) showError("Refresh failed. " + err.message, err.stack);
   } finally {
     setTimeout(() => btn.classList.remove("spinning"), 400);
   }
+});
+
+$("keyForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const k = $("keyInput").value.trim();
+  if (!k) return;
+  setKey(k);
+  showState("loading");
+  initLoad();
 });
 
 initLoad();
