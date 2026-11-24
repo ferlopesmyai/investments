@@ -148,6 +148,14 @@ await page.waitForFunction(() => document.getElementById("live-time").textConten
 ok(await page.evaluate(() => !document.getElementById("groups") && document.querySelectorAll(".quick-row.tap").length === 7
   && [...document.querySelectorAll(".qdetail")].every(p => p.classList.contains("hidden"))), "10. asset cards removed; 7 tappable rows, all closed");
 
+// 10b. All-time gain is gone (hero + Quick Overview column); panels keep cost basis and unrealized.
+const at = await page.evaluate(() => ({
+  heroAllTime: /all-time/i.test(document.querySelector(".card.hero").innerText),
+  head: [...document.querySelectorAll(".quick-grid-head > div")].map(d => d.textContent.trim()),
+  cells: [...document.querySelectorAll(".quick-row")].map(r => r.children.length) }));
+ok(!at.heroAllTime && at.head.join("|") === "Asset|Value|YTD" && at.cells.every(n => n === 3),
+  `10b. no all-time figures; Quick Overview is ${at.head.join(" · ")} (${at.cells.length} rows × 3)`);
+
 // 11. Tap opens one panel at a time; tap again closes.
 const openState = () => page.evaluate(() => ({
   rows: [...document.querySelectorAll(".quick-row.tap")].filter(r => r.getAttribute("aria-expanded") === "true").map(r => r.dataset.k),
@@ -160,6 +168,7 @@ st = await openState();
 ok(st.rows.join() === "Cash" && st.panels.join() === "Cash", "11. tap Cash closes Growth, opens Cash");
 const cashTxt = await page.textContent('.qdetail[data-k="Cash"]');
 ok(/BRL exposure/.test(cashTxt) && /TAXM/.test(cashTxt) && /LFTB11/.test(cashTxt), "11. Cash panel shows BRL exposure and TAXM/LFTB11 split");
+ok(/Cost basis/i.test(cashTxt) && /Unrealized/i.test(cashTxt), "11. panels still show cost basis and unrealized");
 ok(/\$\d+K in BRL/.test(await page.textContent('.quick-row.tap[data-k="Cash"]')), "11. Cash row itself shows the BRL-fund amount");
 await page.keyboard.press("Tab"); // keyboard: Enter on a focused row toggles too
 await page.focus('.quick-row.tap[data-k="Real Estate"]'); await page.keyboard.press("Enter");
@@ -179,18 +188,88 @@ st = await openState();
 const tfAfter = await page.evaluate(() => ({ active: document.querySelector(".tf-btn.active").dataset.tf, n: Chart.getChart(document.getElementById("perfChart")).data.labels.length }));
 ok(hits.length > hitsBefore && st.panels.join() === "401(k)" && tfAfter.active === "1Y" && tfAfter.n === 13, `12. after refresh: 401(k) still open, 1Y still drawn (${tfAfter.n} points)`);
 
-// 13. YTD split: market + money in/out = value change, and market = hero YTD amount.
+// 13. "Change this year" in the hero = new money + growth; matches an independent calculation and the chart line.
 await page.click('.tf-btn[data-tf="YTD"]');
 const split = await page.evaluate(() => {
   const num = s => (s.trim().startsWith("−") ? -1 : 1) * parseFloat(s.replace(/[^\d.]/g, ""));
   const b = document.querySelectorAll("#cl-split b");
-  return { visible: !document.getElementById("cl-split").classList.contains("hidden"),
-    market: num(b[0].textContent), other: num(b[1].textContent),
-    change: num(document.getElementById("cl-port-change").childNodes[0].textContent),
-    hero: num(document.querySelector("#ytdChange .sub").textContent) };
+  const D = compute(JSON.parse(localStorage.getItem("portfolio_raw_v2")));
+  return { heroVisible: !document.getElementById("ytdSplit").classList.contains("hidden"),
+    total: num(document.getElementById("ysTotal").textContent), nm: num(document.getElementById("ysNew").textContent),
+    gr: num(document.getElementById("ysGrowth").textContent),
+    chartNm: num(b[0].textContent), chartGr: num(b[1].textContent),
+    chartChange: num(document.getElementById("cl-port-change").childNodes[0].textContent),
+    noYtdDollar: !document.querySelector("#ytdChange .sub"),
+    principal: D.real_estate.principal_paid, totalValue: D.total_value, e25: D.end_2025_value };
 });
-ok(split.visible && Math.abs(split.market + split.other - split.change) <= 1 && Math.abs(split.market - split.hero) <= 1,
-  `13. YTD split adds up (market ${split.market} + other ${split.other} = change ${split.change}; hero ${split.hero})`);
+// Fixture's 2026 flows: QQQ +6,000; SCHD +3,000; TAXM +51,000 −4,800; BIL −45,800; house cash 211,606 + principal.
+const expectedNm = 6000 + 3000 + 51000 - 4800 - 45800 + 211606 + split.principal;
+ok(split.heroVisible && Math.abs(split.nm + split.gr - split.total) <= 1 && Math.abs(split.total - (split.totalValue - split.e25)) <= 1,
+  `13. hero: new money ${split.nm} + growth ${split.gr} = change ${split.total}`);
+ok(Math.abs(split.nm - expectedNm) <= 1, `13. new money matches independent calc (${Math.round(expectedNm)})`);
+ok(Math.abs(split.chartNm - split.nm) <= 1 && Math.abs(split.chartGr - split.gr) <= 1 && Math.abs(split.chartChange - split.total) <= 1,
+  "13. chart line shows the same new money / growth as the hero");
+ok(split.noYtdDollar, "13. YTD Return shows % only (no second growth figure)");
+// 13b. Top-card YTD Return = growth ÷ average money invested (Modified Dietz), checked independently.
+const mwr = await page.evaluate(() => {
+  const num = s => (s.trim().startsWith("−") ? -1 : 1) * parseFloat(s.replace(/[^\d.]/g, ""));
+  const D = compute(JSON.parse(localStorage.getItem("portfolio_raw_v2")));
+  const y0 = new Date(2026, 0, 1), now = new Date(), span = now - y0;
+  const w = d => Math.min(1, Math.max(0, (now - d) / span));
+  // Fixture flows (dates as the sheet has them): QQQ 1 Mar +6,000 · SCHD 29 Jun +3,000 · TAXM 26 Feb +51,000
+  // · TAXM 20 Nov −4,800 · BIL 26 Feb −45,800 · house 12 Jun +211,606 · principal on the 1st from Aug.
+  const flows = [[new Date(2026,2,1), 6000], [new Date(2026,5,29), 3000], [new Date(2026,1,26), 51000],
+    [new Date(2026,10,20), -4800], [new Date(2026,1,26), -45800], [new Date(2026,5,12,12), 211606]];
+  const L = 412500, r = 5.625 / 1200, n = 360, P = L * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+  const bal = k => L * Math.pow(1 + r, k) - P * ((Math.pow(1 + r, k) - 1) / r);
+  for (let k = 1; ; k++) { const d = new Date(2026, 6 + k, 1); if (d > now) break; flows.push([d, bal(k - 1) - bal(k)]); }
+  const avg = D.end_2025_value + flows.filter(([d]) => d <= now).reduce((a, [d, x]) => a + x * w(d), 0);
+  return { shown: num(document.getElementById("ytdChange").textContent), expectedPct: D.ytd_flows.growth / avg * 100,
+    avgPage: D.ytd_flows.avg_capital, avgIndep: avg,
+    panelHasAvg: /Average invested/.test(document.getElementById("ysParts").textContent) };
+});
+ok(Math.abs(mwr.avgPage - mwr.avgIndep) <= 1 && Math.abs(mwr.shown - mwr.expectedPct) <= 0.01,
+  `13b. YTD Return ${mwr.shown}% = growth ÷ avg invested ($${Math.round(mwr.avgIndep)}, independent calc)`);
+ok(mwr.panelHasAvg, "13b. sources panel shows the average money invested");
+// 13c. Growth by asset: independent per-asset check, adds up to total growth, shown sorted, Quick Overview $ agree.
+const ga = await page.evaluate(() => {
+  const num = s => (s.trim().startsWith("−") ? -1 : 1) * parseFloat(s.replace(/[^\d.]/g, ""));
+  const D = compute(JSON.parse(localStorage.getItem("portfolio_raw_v2")));
+  const G = D.ytd_flows.growth_by_group, A = D.allocation, E = D.end_2025_by_group;
+  const rows = [...document.querySelectorAll("#ysParts .ys-g")].map(s => ({ name: s.textContent.trim(), v: num(s.nextElementSibling.textContent) }));
+  const qoRE = document.querySelector('.quick-row.tap[data-k="Real Estate"] .quick-pct .qp-sub');
+  const qoK = el => num(el.textContent) * 1000;
+  return {
+    sum: Object.values(G).reduce((a, b) => a + b, 0), growth: D.ytd_flows.growth,
+    nonZero: Object.values(G).filter(v => Math.abs(v) >= 0.5).length,
+    qqqOk: Math.abs(G.QQQ - (A.QQQ - E.QQQ - 6000)) < 0.02,
+    cashOk: Math.abs(G.Cash - (A.Cash - E.Cash - (51000 - 4800 - 45800))) < 0.02,
+    reOk: Math.abs(G["Real Estate"] - (D.real_estate.equity - 211606 - D.real_estate.principal_paid)) < 0.05,
+    rows, sorted: rows.every((r, i) => i === 0 || rows[i - 1].v >= r.v), rowSum: rows.reduce((a, r) => a + r.v, 0),
+    qoREsub: qoRE ? qoRE.textContent : null,
+    qoMatch: [...document.querySelectorAll(".quick-row.tap")].every(r => {
+      const sub = r.querySelector(".quick-pct .qp-sub"); const g = G[r.dataset.k];
+      return sub && Math.abs(qoK(sub) - g) <= 500 + 1e-6;   // shown in $K, so within $500
+    }),
+    note: document.querySelector(".card.quick .card-action").textContent };
+});
+ok(Math.abs(ga.sum - ga.growth) <= 1 && ga.qqqOk && ga.cashOk && ga.reOk, "13c. growth by asset matches independent calc and adds up to total growth");
+ok(ga.rows.length === ga.nonZero && ga.sorted && Math.abs(ga.rowSum - ga.growth) <= 7, `13c. top card lists every asset with growth, largest first (${ga.rows.map(r => r.name).join(", ")})`);
+ok(ga.qoMatch && ga.qoREsub && ga.note === "YTD: % return · $ growth", `13c. Quick Overview $ = the same growth numbers (Real Estate ${ga.qoREsub})`);
+await page.click("#ytdSplit");
+const parts = await page.evaluate(() => {
+  const num = s => (s.trim().startsWith("−") ? -1 : 1) * parseFloat(s.replace(/[^\d.]/g, ""));
+  const el = document.getElementById("ysParts");
+  const src = ["401(k) contributions", "Brokerage buys − sales", "Crypto buys", "House: cash in + principal"];
+  const spans = [...el.querySelectorAll("span")], bs = [...el.querySelectorAll("b")];
+  return { visible: !el.classList.contains("hidden"),
+    sum: spans.reduce((a, s, i) => src.includes(s.textContent) ? a + num(bs[i].textContent) : a, 0),
+    labels: spans.map(s => s.textContent).filter(l => src.includes(l)) };
+});
+ok(parts.visible && Math.abs(parts.sum - split.nm) <= 2 && parts.labels.includes("Brokerage buys − sales"),
+  `13. tapping shows the sources (${parts.labels.join(", ")}), summing to new money`);
+await page.click("#ytdSplit");
+ok(await page.evaluate(() => document.getElementById("ysParts").classList.contains("hidden")), "13. tapping again hides the sources");
 
 // 14. No truncated names or numbers in Quick Overview at common iPhone widths.
 for (const w of [375, 393, 402, 430]) {

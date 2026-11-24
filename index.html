@@ -68,14 +68,6 @@ body{background:var(--bg);color:var(--text);font-family:"Plus Jakarta Sans",-app
 .hero-value{font-family:"Inter",sans-serif;font-size:clamp(40px,11vw,56px);font-weight:700;letter-spacing:-.035em;line-height:1;color:var(--text);font-feature-settings:"tnum"}
 .hero-value .cents{font-size:.5em;color:var(--text-3);font-weight:600}
 .hero-brl{font-family:"Inter",sans-serif;font-size:13px;font-weight:600;color:var(--text-3);margin-top:8px;font-variant-numeric:tabular-nums;letter-spacing:.01em}
-.hero-row{display:flex;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap}
-.pill{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:100px;font-size:12px;font-weight:700;font-family:"Inter",sans-serif}
-.pill-up{background:var(--up-soft);color:var(--up)}
-.pill-down{background:var(--down-soft);color:var(--down)}
-.pill-arrow{font-size:10px}
-.hero-pl-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);margin-top:18px;margin-bottom:8px}
-.hero-pl-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.hero-pl-amount{font-family:"Inter",sans-serif;font-size:15px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
 .hero-divider{height:1px;background:var(--border);margin:18px 0 16px}
 .hero-meta{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .meta-item{display:flex;flex-direction:column;gap:2px}
@@ -85,9 +77,9 @@ body{background:var(--bg);color:var(--text);font-family:"Plus Jakarta Sans",-app
 .donut-wrap{display:flex;align-items:center;gap:18px}
 .donut-canvas{width:110px;height:110px;flex-shrink:0;position:relative}
 .donut-canvas canvas{display:block;width:110px!important;height:110px!important}
-.quick-grid-head{display:grid;grid-template-columns:minmax(0,1fr) 60px 54px 54px;gap:6px;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:0 2px 8px;border-bottom:1px solid var(--border-2)}
+.quick-grid-head{display:grid;grid-template-columns:minmax(0,1fr) 76px 72px;gap:6px;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:0 2px 8px;border-bottom:1px solid var(--border-2)}
 .quick-grid-head .qh-r{text-align:right}
-.quick-row{display:grid;grid-template-columns:minmax(0,1fr) 60px 54px 54px;gap:6px;align-items:center;padding:11px 2px;border-bottom:1px solid var(--border-2)}
+.quick-row{display:grid;grid-template-columns:minmax(0,1fr) 76px 72px;gap:6px;align-items:center;padding:11px 2px;border-bottom:1px solid var(--border-2)}
 .quick-row:last-child{border-bottom:none}
 .quick-row.tap{cursor:pointer;-webkit-tap-highlight-color:transparent;border-radius:10px;transition:background .15s}
 .quick-row.tap:active{background:var(--card-soft)}
@@ -158,6 +150,29 @@ footer{text-align:center;font-size:11px;color:rgba(255,255,255,.6);font-weight:5
 .key-form{display:flex;gap:8px}
 .key-input{flex:1;min-width:0;font-family:"Inter",monospace;font-size:16px;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card-soft);color:var(--text);letter-spacing:.04em}
 .key-input:focus{outline:2px solid var(--coral-soft);border-color:var(--coral)}
+.ytd-split{margin-top:16px;padding-top:14px;border-top:1px solid var(--border);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.ys-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.ys-head .meta-label{display:flex;align-items:center;gap:6px}
+.ys-chev{width:6px;height:6px;border-right:1.6px solid var(--text-3);border-bottom:1.6px solid var(--text-3);transform:rotate(-45deg);transition:transform .18s;display:inline-block}
+.ytd-split.open .ys-chev{transform:rotate(45deg) translate(-1px,-1px)}
+.ys-total{font-family:"Inter",sans-serif;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+.ys-bar{display:flex;gap:2px;height:8px;border-radius:100px;overflow:hidden;background:var(--card-soft)}
+.ys-bar span{height:100%;border-radius:100px}
+.ys-new{background:var(--slate)}
+.ys-growth{background:var(--up)}
+.ys-growth.neg{background:var(--down)}
+.ys-legend{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 12px;margin-top:8px;font-size:12px;font-weight:600;color:var(--text-2)}
+.ys-legend b{font-family:"Inter",sans-serif;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+.ys-dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}
+.ys-parts{display:grid;grid-template-columns:1fr auto;gap:5px 12px;margin-top:12px;padding:12px 14px;background:var(--card-soft);border-radius:12px;font-size:12px;color:var(--text-2)}
+.ys-parts b{font-family:"Inter",sans-serif;font-weight:700;color:var(--text);text-align:right;font-variant-numeric:tabular-nums}
+.ys-parts .ys-sep{border-top:1px solid var(--border);padding-top:7px;margin-top:3px}
+.ys-parts .ys-h{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);padding-top:6px}
+.ys-parts .ys-h:first-child{padding-top:0}
+.ys-g{display:flex;align-items:center;min-width:0}
+.ys-g .ys-dot{flex-shrink:0}
+.ys-track{flex:1;height:6px;margin:0 2px 0 10px;border-radius:100px;background:rgba(42,32,26,.06);overflow:hidden;min-width:30px}
+.ys-fill{display:block;height:100%;border-radius:100px}
 .hidden{display:none!important}
 </style>
 </head>
@@ -202,24 +217,27 @@ footer{text-align:center;font-size:11px;color:rgba(255,255,255,.6);font-weight:5
       <div class="hero-label">Total Portfolio Value</div>
       <div class="hero-value" id="totalValue"></div>
       <div class="hero-brl" id="totalValueBRL"></div>
-      <div class="hero-pl-label">All-time gain</div>
-      <div class="hero-pl-row">
-        <span class="pill" id="pillAll"></span>
-        <span class="hero-pl-amount" id="amtAll"></span>
-      </div>
       <div class="hero-divider"></div>
       <div class="hero-meta">
         <div class="meta-item"><span class="meta-label">Year-End 2025</span><span class="meta-value" id="ytdEnd2025"></span></div>
         <div class="meta-item"><span class="meta-label">YTD Return</span><span class="meta-value" id="ytdChange"></span></div>
       </div>
+      <div class="ytd-split hidden" id="ytdSplit" role="button" tabindex="0" aria-expanded="false">
+        <div class="ys-head"><span class="meta-label">Change this year <span class="ys-chev"></span></span><span class="ys-total" id="ysTotal"></span></div>
+        <div class="ys-bar"><span class="ys-new" id="ysBarNew"></span><span class="ys-growth" id="ysBarGrowth"></span></div>
+        <div class="ys-legend">
+          <span><i class="ys-dot ys-new"></i>New money <b id="ysNew"></b></span>
+          <span><i class="ys-dot ys-growth" id="ysGrowthDot"></i>Growth <b id="ysGrowth"></b></span>
+        </div>
+        <div class="ys-parts hidden" id="ysParts"></div>
+      </div>
     </div>
 
     <div class="card quick">
-      <div class="card-head"><span class="card-title">Quick Overview</span><span class="card-action">YTD = price return</span></div>
+      <div class="card-head"><span class="card-title">Quick Overview</span><span class="card-action">YTD: % return · $ growth</span></div>
       <div class="quick-grid-head">
         <div>Asset</div>
         <div class="qh-r">Value</div>
-        <div class="qh-r">All-time</div>
         <div class="qh-r">YTD</div>
       </div>
       <div id="quickList"></div>
@@ -649,10 +667,8 @@ function compute(raw) {
 
   // ---- Aggregates ----
   let total_value = Object.values(positions).reduce((s, p) => s + p.value, 0);
-  let total_cost  = Object.values(positions).reduce((s, p) => s + p.cost, 0);
   if (realEstate) {
     total_value += realEstate.equity;
-    total_cost  += realEstate.cash_invested;
   }
 
   // BTC and ETH are tracked as their own asset classes (split out 2026-09).
@@ -834,13 +850,81 @@ function compute(raw) {
   const sp500_ytd_pct = sp500_end_2025 ? +(((sp500_now - sp500_end_2025) / sp500_end_2025) * 100).toFixed(2) : 0;
   const sp500_as_of = sp500_live_ok ? "live" : sp500_last_date;
 
+  // ---- This year's change: new money vs growth, and the money-weighted return ----
+  // New money = cash that came into the tracked portfolio from outside since Dec 31, 2025:
+  //   brokerage buys − sales (internal rotations like BIL→TAXM cancel out), crypto buys,
+  //   401(k) contributions (incl. employer match), and for the house the cash put in at purchase
+  //   (down payment + closing + remodel) plus mortgage principal as it is paid.
+  // Growth = the rest of the change (price moves on everything, incl. this year's buys, plus the
+  //   house's value vs what went into it). Reinvested dividends booked as BUYs count as new money.
+  // YTD Return (top card) = money-weighted return (Modified Dietz): growth ÷ average money invested,
+  //   where each flow counts for the share of the year it was invested — the "personal rate of
+  //   return" brokers report. Per-asset YTD in Quick Overview stays price return (vs the S&P 500).
+  // Transactions dated Dec 31, 2025 belong to the year-end snapshot, so the window starts Jan 1.
+  const yStart = new Date(2026, 0, 1);
+  const yNow = new Date();
+  const inYear = d => d && d >= yStart && d <= yNow;
+  const flowList = [];                       // { part, group, d, amt }
+  const addFlow = (part, group, d, amt) => { if (inYear(d) && amt) flowList.push({ part, group, d, amt }); };
+  const GROUP_OF = { QQQ: "QQQ", SCHD: "SCHD", TAXM: "Cash", BIL: "Cash", LFTB11: "Cash", BTC: "BTC", ETH: "ETH" };
+  ["QQQ", "SCHD", "TAXM", "BIL", "LFTB11"].forEach(t => findSheet(raw, t).forEach(r => {
+    const rawQ = r.QTD;
+    if (typeof rawQ === "string" && !/^[\d.,]+$/.test(rawQ.replace(/\s/g, ""))) return;
+    const q = toNum(rawQ); if (!(q > 0)) return;
+    const tot = toNum(r.Total) || q * toNum(r.Price);
+    const ty = String(r.Type || "").toUpperCase().trim();
+    const d = toDate(r.Date, "dmy");
+    if (ty === "BUY") addFlow("brokerage", GROUP_OF[t], d, tot);
+    else if (ty === "SELL") addFlow("brokerage", GROUP_OF[t], d, -tot);
+  }));
+  ["BTC", "ETH"].forEach(t => findSheet(raw, t).forEach(r => {
+    if (!(toNum(r.QTD || r.Qtd || r.qtd) > 0)) return;
+    const tk = Object.keys(r).find(k => /total\s*usd/i.test(k));
+    addFlow("crypto", t, toDate(r["Date USA"] || r.Date, "mdy"), tk ? toNum(r[tk]) : 0);
+  }));
+  vfRows.forEach(r => { if (/Plan Contribution/i.test(String(r.Type || ""))) addFlow("k401", "401(k)", toDate(r.Date, "mdy"), toNum(r.Amount)); });
+  brRows.forEach(r => { if (/Contribution/i.test(String(r["Activity Type"] || ""))) addFlow("k401", "401(k)", toDate(r.Date, "mdy"), toNum(r.Amount)); });
+  if (realEstate && realEstate.purchase_date) {
+    const pd = new Date(realEstate.purchase_date + "T12:00:00");
+    addFlow("house", "Real Estate", pd, realEstate.cash_invested);   // only counts if bought this year
+    // Principal, payment by payment (first payment = 1st of the 2nd month after closing).
+    const am = k => amortize(realEstate.original_loan, realEstate.interest_rate, realEstate.term_months, k).principal_paid;
+    for (let k = 1; k <= realEstate.payments_made; k++) {
+      addFlow("house", "Real Estate", new Date(pd.getFullYear(), pd.getMonth() + 1 + k, 1), am(k) - am(k - 1));
+    }
+  }
+  const flowParts = { k401: 0, brokerage: 0, crypto: 0, house: 0 };
+  flowList.forEach(f => { flowParts[f.part] += f.amt; });
+  const newMoney = flowList.reduce((a, f) => a + f.amt, 0);
+  let ytd_flows = null;
+  if (end_2025_value != null) {
+    const span = Math.max(1, yNow - yStart);
+    const avgCapital = end_2025_value + flowList.reduce((a, f) => a + f.amt * Math.min(1, Math.max(0, (yNow - f.d) / span)), 0);
+    const growth = (total_value - end_2025_value) - newMoney;
+    // Growth by asset group = that group's change in value − the new money that went into it.
+    // The groups add up exactly to the total growth (allocation sums to total_value).
+    const growthByGroup = {};
+    Object.keys(allocation).forEach(g => {
+      const v0 = (end_2025_by_group && end_2025_by_group[g]) || 0;
+      const nm = flowList.filter(f => f.group === g).reduce((a, f) => a + f.amt, 0);
+      growthByGroup[g] = +((allocation[g] || 0) - v0 - nm).toFixed(2);
+    });
+    ytd_flows = {
+      growth_by_group: growthByGroup,
+      change: +(total_value - end_2025_value).toFixed(2),
+      new_money: +newMoney.toFixed(2),
+      growth: +growth.toFixed(2),
+      avg_capital: +avgCapital.toFixed(2),
+      return_pct: avgCapital > 0 ? +((growth / avgCapital) * 100).toFixed(2) : null,
+      parts: Object.fromEntries(Object.entries(flowParts).map(([k, v]) => [k, +v.toFixed(2)]))
+    };
+  }
+
   // ---- Final schema ----
   return {
+    ytd_flows,
     as_of: localISO(),
     total_value: +total_value.toFixed(2),
-    total_cost: +total_cost.toFixed(2),
-    unrealized_pl: +(total_value - total_cost).toFixed(2),
-    unrealized_pct: total_cost > 0 ? +(((total_value - total_cost) / total_cost) * 100).toFixed(2) : 0,
     end_2025_value,
     end_2025_by_group,
     ytd_priced_by_group,
@@ -943,7 +1027,6 @@ const fmtK = n => { const a = Math.abs(n); if (a >= 1e6) return "$" + (n / 1e6).
 const split = n => { const [i, d] = fmt(n).split("."); return { int: (n < 0 ? "-" : "") + i, dec: d }; };
 const sgn = n => n >= 0 ? "+" : "−";
 const cls = n => n >= 0 ? "up" : "down";
-const arrow = n => n >= 0 ? "↑" : "↓";
 
 const GROUPS = {
   QQQ: { color: "#E07856", soft: "#FBE4DA", title: "Growth", short: "Growth", subtitle: "QQQ — NASDAQ 100" },
@@ -1051,18 +1134,60 @@ function render(D) {
   $("allocAsOf").textContent = D.as_of;
 
   const end2025 = D.end_2025_value || 0;
-  // YTD = price-only return (apples-to-apples with S&P 500 sentinel below).
-  const ytdChg = (D.ytd_priced_total || 0) - end2025;
-  const ytdPct = end2025 ? (ytdChg / end2025) * 100 : 0;
 
-  const pillAll = $("pillAll");
-  pillAll.innerHTML = `<span class="pill-arrow">${arrow(D.unrealized_pct)}</span> ${sgn(D.unrealized_pct)}${fmt(D.unrealized_pct)}%`;
-  pillAll.className = "pill " + (D.unrealized_pct >= 0 ? "pill-up" : "pill-down");
-  const amtAll = $("amtAll");
-  amtAll.textContent = `${sgn(D.unrealized_pl)}$${fmt(Math.abs(D.unrealized_pl), 0)}`;
-  amtAll.style.color = D.unrealized_pl >= 0 ? "var(--up)" : "var(--down)";
   $("ytdEnd2025").innerHTML = `$${fmt(end2025, 0)}`;
-  $("ytdChange").innerHTML = `<span style="color:${ytdChg >= 0 ? 'var(--up)' : 'var(--down)'}">${sgn(ytdPct)}${fmt(ytdPct)}%</span><span class="sub">${sgn(ytdChg)}$${fmt(Math.abs(ytdChg), 0)}</span>`;
+  // YTD Return = money-weighted: growth ÷ average money invested this year (see compute() → ytd_flows).
+  // Per-asset YTD in Quick Overview stays price return, next to the S&P 500.
+  const ret = D.ytd_flows ? D.ytd_flows.return_pct : null;
+  $("ytdChange").innerHTML = ret == null ? "—"
+    : `<span style="color:${pctColor(ret)}">${sgn(ret)}${fmt(Math.abs(ret))}%</span>`;
+
+  // Change this year = new money + growth (see compute() → ytd_flows).
+  const F = D.ytd_flows, ys = $("ytdSplit");
+  if (F) {
+    const money = n => `${sgn(n)}$${fmt(Math.abs(n), 0)}`;
+    $("ysTotal").textContent = money(F.change);
+    $("ysTotal").style.color = pctColor(F.change);
+    $("ysNew").textContent = money(F.new_money);
+    $("ysGrowth").textContent = money(F.growth);
+    $("ysGrowth").style.color = pctColor(F.growth);
+    const pos = Math.max(F.new_money, 0) + Math.max(F.growth, 0);
+    const wNew = pos ? (Math.max(F.new_money, 0) / pos) * 100 : 0;
+    $("ysBarNew").style.width = wNew + "%";
+    $("ysBarGrowth").style.width = (pos ? 100 - wNew : 0) + "%";
+    $("ysBarNew").style.display = wNew > 0 ? "" : "none";
+    $("ysBarGrowth").style.display = pos && wNew < 100 ? "" : "none";
+    $("ysGrowthDot").classList.toggle("neg", F.growth < 0);
+    const P2 = F.parts;
+    const head = t => `<span class="ys-h">${t}</span><b class="ys-h"></b>`;
+    const gRows = Object.entries(F.growth_by_group || {}).filter(([, v]) => Math.abs(v) >= 0.5).sort((a, b) => b[1] - a[1]);
+    const gMax = Math.max(1, ...gRows.map(([, v]) => Math.abs(v)));
+    const growthHtml = gRows.length ? head("Growth by asset") + gRows.map(([g, v]) => {
+      const G = GROUPS[g] || { color: "#888", short: g };
+      return `<span class="ys-g"><i class="ys-dot" style="background:${G.color}"></i>${G.short || g}`
+        + `<span class="ys-track"><span class="ys-fill" style="width:${(Math.abs(v) / gMax * 100).toFixed(1)}%;background:${pctColor(v)}"></span></span></span>`
+        + `<b style="color:${pctColor(v)}">${money(v)}</b>`;
+    }).join("") : "";
+    $("ysParts").innerHTML = head("New money from") + [
+      ["401(k) contributions", P2.k401],
+      ["Brokerage buys − sales", P2.brokerage],
+      ["Crypto buys", P2.crypto],
+      ["House: cash in + principal", P2.house]
+    ].filter(([, v]) => Math.abs(v) >= 0.5).map(([l, v]) => `<span>${l}</span><b>${money(v)}</b>`).join("")
+      + growthHtml
+      + (F.return_pct == null ? "" :
+        `<span class="ys-sep">Average invested this year</span><b class="ys-sep">$${fmt(F.avg_capital, 0)}</b>`
+        + `<span>YTD Return (growth ÷ avg.)</span><b style="color:${pctColor(F.return_pct)}">${sgn(F.return_pct)}${fmt(Math.abs(F.return_pct))}%</b>`);
+    ys.classList.remove("hidden");
+  } else {
+    ys.classList.add("hidden");
+  }
+  ys.onclick = () => {
+    const open = ys.classList.toggle("open");
+    $("ysParts").classList.toggle("hidden", !open);
+    ys.setAttribute("aria-expanded", open ? "true" : "false");
+  };
+  ys.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); ys.onclick(); } };
 
   // Quick Overview: one tappable row per asset class. Tapping opens that class's details inline
   // (this replaced the separate per-asset cards, which repeated the same numbers).
@@ -1086,17 +1211,17 @@ function render(D) {
   if (openGroup && !QUICK_ORDER.includes(openGroup)) openGroup = null;
   QUICK_ORDER.forEach(k => {
     const g = GROUPS[k]; const gv = groupVals[k];
-    const allTimePl = gv.value - gv.cost;
-    const allTimePct = gv.cost > 0 ? (allTimePl / gv.cost) * 100 : 0;
     const end25 = (D.end_2025_by_group && D.end_2025_by_group[k]) || 0;
     // Price-only YTD: same end-2025 shares marked to today's prices, so it compares to S&P 500 fairly.
     const ytdNow = (D.ytd_priced_by_group && D.ytd_priced_by_group[k]) || 0;
     const ytdChg = end25 ? ytdNow - end25 : 0;
     const ytdPct = end25 ? (ytdChg / end25) * 100 : 0;
-    const allCls = allTimePl >= 0 ? "up" : "down";
-    const ytdCls = ytdChg >= 0 ? "up" : "down";
-    const allTimeStr = `${sgn(allTimePct)}${fmt(Math.abs(allTimePct), 1)}%<span class="qp-sub">${sgn(allTimePl)}${fmtK(Math.abs(allTimePl))}</span>`;
-    const ytdStr = end25 ? `${sgn(ytdPct)}${fmt(Math.abs(ytdPct), 1)}%<span class="qp-sub">${sgn(ytdChg)}${fmtK(Math.abs(ytdChg))}</span>` : `<span style="color:var(--text-3)">—</span>`;
+    const ytdCls = (end25 ? ytdChg : (D.ytd_flows && D.ytd_flows.growth_by_group ? D.ytd_flows.growth_by_group[k] : 0)) >= 0 ? "up" : "down";
+    // % = price return (vs the S&P 500); $ = this year's growth for the asset, the same number as in the
+    // top card's "Growth by asset" (so the $ figures add up to the top card's growth).
+    const gAsset = D.ytd_flows && D.ytd_flows.growth_by_group ? D.ytd_flows.growth_by_group[k] : null;
+    const gSub = gAsset == null ? "" : `<span class="qp-sub">${sgn(gAsset)}${fmtK(Math.abs(gAsset))}</span>`;
+    const ytdStr = (end25 ? `${sgn(ytdPct)}${fmt(Math.abs(ytdPct), 1)}%` : `<span style="color:var(--text-3)">—</span>`) + gSub;
     // Most of "Cash" is LFTB11, a Brazilian-real fund — say so right on the row.
     const sub = (k === "Cash" && P.LFTB11 && P.LFTB11.value > 0) ? `<span class="qn-sub">${fmtK(P.LFTB11.value)} in BRL</span>` : "";
     const isOpen = openGroup === k;
@@ -1109,7 +1234,6 @@ function render(D) {
     row.innerHTML = `
       <div class="quick-name"><span class="swatch-q" style="background:${g.color}"></span><span class="qn"><span class="qn-t">${g.short || g.title}</span>${sub}</span><span class="chev"></span></div>
       <div class="quick-val">${fmtK(gv.value)}</div>
-      <div class="quick-pct ${allCls}">${allTimeStr}</div>
       <div class="quick-pct ${ytdCls}">${ytdStr}</div>`;
     qList.appendChild(row);
     const panel = document.createElement("div");
@@ -1135,7 +1259,6 @@ function render(D) {
   spxRow.innerHTML = `
     <div class="quick-name"><span class="swatch-q"></span><span>S&amp;P 500</span></div>
     <div class="quick-val" style="color:var(--text-3)">—</div>
-    <div class="quick-pct" style="color:var(--text-3)">—</div>
     <div class="quick-pct ${spxCls}">${sgn(spxYtd)}${fmt(Math.abs(spxYtd), 1)}%<span class="qp-sub">${spxSub}</span></div>`;
   qList.appendChild(spxRow);
 
@@ -1195,14 +1318,12 @@ function render(D) {
     $("cl-port-label").textContent = "Now";
     $("cl-port-change").innerHTML = `${sgn(change)}$${fmt(Math.abs(change), 0)} <span style="opacity:.6">(${sgn(changePct)}${fmt(Math.abs(changePct), 1)}%)</span>`;
     $("cl-port-change").style.color = change >= 0 ? "var(--up)" : "var(--down)";
-    // On YTD, split the value change: market = the price-only YTD return in the hero card;
-    // the rest is money added/withdrawn during the year (contributions, trades, the house).
+    // On YTD, split the value change the same way as the hero card: new money vs growth.
     const splitEl = $("cl-split");
-    if (tf === "YTD" && D.end_2025_value && port[0].date === "2025-12-31") {
-      const market = (D.ytd_priced_total || 0) - D.end_2025_value;
-      const other = change - market;
-      splitEl.innerHTML = `Market <b style="color:${pctColor(market)}">${sgn(market)}$${fmt(Math.abs(market), 0)}</b>`
-        + ` · money in/out &amp; house <b>${sgn(other)}$${fmt(Math.abs(other), 0)}</b>`;
+    if (tf === "YTD" && D.ytd_flows && port[0].date === "2025-12-31") {
+      const nm = D.ytd_flows.new_money, gr = change - nm;   // same as ytd_flows.growth (chart ends at the live total)
+      splitEl.innerHTML = `New money <b>${sgn(nm)}$${fmt(Math.abs(nm), 0)}</b>`
+        + ` · growth <b style="color:${pctColor(gr)}">${sgn(gr)}$${fmt(Math.abs(gr), 0)}</b>`;
       splitEl.classList.remove("hidden");
     } else {
       splitEl.classList.add("hidden");
