@@ -1000,7 +1000,7 @@ function detailHtml(k, D, gv) {
     }
     case "Cash": {
       const l = P.LFTB11;
-      return grid([costStat(), plStat, statBlock("In BRL fund", "$" + fmt(l.value, 0), "LFTB11 · moves with USD/BRL"), portStat])
+      return grid([costStat(), plStat, statBlock("BRL exposure", pctOf(l.value), "of portfolio, via LFTB11"), portStat])
         + hold([posRow("TAXM", P.TAXM), posRow("LFTB11", l)]);
     }
     case "401(k)": {
